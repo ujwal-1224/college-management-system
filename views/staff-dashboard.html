@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/enterprise-theme.css">
+</head>
+<body>
+  <nav class="navbar-enterprise navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/staff/dashboard">College Portal</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="/staff/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/staff/timetable">Timetable</a></li>
+          <li class="nav-item"><a class="nav-link" href="/staff/attendance">Attendance</a></li>
+          <li class="nav-item"><a class="nav-link" href="/staff/grades">Grades</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-enterprise">
+    <div class="page-header-enterprise">
+      <h1>Staff Dashboard</h1>
+      <p>Welcome back, <span id="staffName">Loading...</span></p>
+    </div>
+    
+    <div class="row">
+      <div class="col-md-6 mb-4">
+        <div class="stat-card-enterprise">
+          <div class="stat-icon">
+            <i class="bi bi-person-badge"></i>
+          </div>
+          <div class="stat-label">Profile Information</div>
+          <p class="mb-1" style="font-size: 0.95rem;"><strong>Name:</strong> <span id="fullName">Loading...</span></p>
+          <p class="mb-1" style="font-size: 0.95rem;"><strong>Email:</strong> <span id="email">Loading...</span></p>
+          <p class="mb-1" style="font-size: 0.95rem;"><strong>Department:</strong> <span id="department">Loading...</span></p>
+          <p class="mb-0" style="font-size: 0.95rem;"><strong>Designation:</strong> <span id="designation">Loading...</span></p>
+        </div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="stat-card-enterprise">
+          <div class="stat-icon">
+            <i class="bi bi-bar-chart"></i>
+          </div>
+          <div class="stat-label">Quick Stats</div>
+          <p class="mb-1" style="font-size: 0.95rem;"><strong>Total Courses:</strong> <span id="totalCourses">0</span></p>
+          <p class="mb-0" style="font-size: 0.95rem;"><strong>Total Students:</strong> <span id="totalStudents">0</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-enterprise">
+      <div class="card-enterprise-header">
+        <i class="bi bi-book"></i> My Courses
+      </div>
+      <div class="table-responsive">
+        <table class="table-enterprise">
+          <thead>
+            <tr>
+              <th>Course Code</th>
+              <th>Course Name</th>
+              <th>Credits</th>
+              <th>Semester</th>
+              <th>Department</th>
+            </tr>
+          </thead>
+          <tbody id="coursesTable">
+            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-enterprise">
+      <div class="card-enterprise-header">
+        <i class="bi bi-people"></i> My Students
+      </div>
+      <div class="table-responsive">
+        <table class="table-enterprise">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Department</th>
+              <th>Semester</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTable">
+            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/staff.js"></script>
+</body>
+</html>

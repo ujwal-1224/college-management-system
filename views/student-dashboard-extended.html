@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/enterprise-theme.css">
+  <style>
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ef4444;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-icon-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar-enterprise navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/student/dashboard">College Portal</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="javascript:void(0)" onclick="showSection('overview')" id="nav-dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showSection('courses')" id="nav-courses">Courses</a></li>
+          <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showSection('timetable')" id="nav-timetable">Timetable</a></li>
+          <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showSection('fees')" id="nav-fees">Fees</a></li>
+          <li class="nav-item">
+            <a class="nav-link nav-icon-wrapper" href="javascript:void(0)" onclick="showNotifications()" id="nav-notifications">
+              <i class="bi bi-bell"></i>
+              <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+            </a>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showSection('profile')" id="nav-profile">Profile</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-enterprise">
+    <!-- Overview Section -->
+    <div id="overview">
+      <div class="page-header-enterprise">
+        <h1>Student Dashboard</h1>
+        <p>Welcome back, <span id="navStudentName">Student</span></p>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-md-3">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon">
+              <i class="bi bi-person-circle"></i>
+            </div>
+            <div class="stat-label">My Profile</div>
+            <p class="stat-value" style="font-size: 1rem;" id="studentName">Loading...</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon">
+              <i class="bi bi-trophy"></i>
+            </div>
+            <div class="stat-label">CGPA</div>
+            <div class="stat-value" id="cgpa">0.00</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon">
+              <i class="bi bi-cash-coin"></i>
+            </div>
+            <div class="stat-label">Pending Dues</div>
+            <div class="stat-value" id="pendingDues">₹0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card-enterprise">
+            <div class="stat-icon">
+              <i class="bi bi-building"></i>
+            </div>
+            <div class="stat-label">Hostel Room</div>
+            <p class="stat-value" style="font-size: 1.2rem;" id="hostelRoom">N/A</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-lightning-fill"></i> Quick Actions
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-2">
+              <button class="btn-enterprise btn-enterprise-primary w-100" onclick="showSection('courses')">
+                <i class="bi bi-book"></i> My Courses
+              </button>
+            </div>
+            <div class="col-md-3 mb-2">
+              <button class="btn-enterprise btn-enterprise-success w-100" onclick="showSection('fees')">
+                <i class="bi bi-cash"></i> Pay Fees
+              </button>
+            </div>
+            <div class="col-md-3 mb-2">
+              <button class="btn-enterprise btn-enterprise-primary w-100" onclick="showSection('profile')">
+                <i class="bi bi-person"></i> Edit Profile
+              </button>
+            </div>
+            <div class="col-md-3 mb-2">
+              <button class="btn-enterprise btn-enterprise-secondary w-100" onclick="showSection('timetable')">
+                <i class="bi bi-calendar"></i> Timetable
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Attendance -->
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-calendar-check"></i> Recent Attendance
+        </div>
+        <div class="table-responsive">
+          <table class="table-enterprise">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Course</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceTable">
+              <tr><td colspan="3" class="text-center">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Results -->
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-trophy"></i> Recent Results
+        </div>
+        <div class="table-responsive">
+          <table class="table-enterprise">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Course</th>
+                <th>Exam</th>
+                <th>Marks</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody id="resultsTable">
+              <tr><td colspan="5" class="text-center">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Courses Section -->
+    <div id="courses" style="display: none;">
+      <div class="page-header-enterprise">
+        <h1>
+          <button class="btn-enterprise btn-enterprise-secondary" onclick="showSection('overview')">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          My Courses
+        </h1>
+      </div>
+      
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-book"></i> Enrolled Courses
+        </div>
+        <div class="table-responsive">
+          <table class="table-enterprise">
+            <thead>
+              <tr>
+                <th>Course Code</th>
+                <th>Course Name</th>
+                <th>Credits</th>
+                <th>Faculty</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="coursesTable">
+              <tr><td colspan="5" class="text-center">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timetable Section -->
+    <div id="timetable" style="display: none;">
+      <div class="page-header-enterprise">
+        <h1>
+          <button class="btn-enterprise btn-enterprise-secondary" onclick="showSection('overview')">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          Weekly Timetable
+        </h1>
+      </div>
+      
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-calendar-week"></i> Class Schedule
+        </div>
+        <div class="card-body" id="timetableContainer">
+          <p class="text-center">Loading...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fees Section -->
+    <div id="fees" style="display: none;">
+      <div class="page-header-enterprise">
+        <h1>
+          <button class="btn-enterprise btn-enterprise-secondary" onclick="showSection('overview')">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          Fee & Payment
+        </h1>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-md-4">
+          <div class="stat-card-enterprise">
+            <div class="stat-label">Total Fee</div>
+            <div class="stat-value" id="totalFee">₹0</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card-enterprise" style="border-left-color: var(--success);">
+            <div class="stat-label">Paid Amount</div>
+            <div class="stat-value" style="color: var(--success);" id="paidAmount">₹0</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card-enterprise" style="border-left-color: var(--error);">
+            <div class="stat-label">Pending Dues</div>
+            <div class="stat-value" style="color: var(--error);" id="pendingAmount">₹0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fee Breakdown -->
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-receipt"></i> Fee Breakdown
+        </div>
+        <div class="card-body">
+          <table class="table">
+            <tr><td>Tuition Fee</td><td class="text-end" id="tuitionFee">₹0</td></tr>
+            <tr><td>Hostel Fee</td><td class="text-end" id="hostelFee">₹0</td></tr>
+            <tr><td>Library Fee</td><td class="text-end" id="libraryFee">₹0</td></tr>
+            <tr><td>Lab Fee</td><td class="text-end" id="labFee">₹0</td></tr>
+            <tr><td>Other Fees</td><td class="text-end" id="otherFee">₹0</td></tr>
+            <tr class="fw-bold"><td>Total</td><td class="text-end" id="totalFeeBreakdown">₹0</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Make Payment -->
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-credit-card"></i> Make Payment
+        </div>
+        <div class="card-body">
+          <form id="paymentForm" class="form-enterprise">
+            <div class="mb-3">
+              <label class="form-label">Amount</label>
+              <input type="number" class="form-control" id="paymentAmount" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Payment Method</label>
+              <select class="form-control" id="paymentMethod" required>
+                <option value="Online">Online Payment</option>
+                <option value="Card">Credit/Debit Card</option>
+                <option value="UPI">UPI</option>
+                <option value="Net Banking">Net Banking</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Description</label>
+              <input type="text" class="form-control" id="paymentDescription" placeholder="e.g., Tuition Fee">
+            </div>
+            <button type="submit" class="btn-enterprise btn-enterprise-success">
+              <i class="bi bi-check-circle"></i> Pay Now
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Payment History -->
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-clock-history"></i> Payment History
+        </div>
+        <div class="table-responsive">
+          <table class="table-enterprise">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Receipt</th>
+              </tr>
+            </thead>
+            <tbody id="paymentHistoryTable">
+              <tr><td colspan="5" class="text-center">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profile" style="display: none;">
+      <div class="page-header-enterprise">
+        <h1>
+          <button class="btn-enterprise btn-enterprise-secondary" onclick="showSection('overview')">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          Profile Management
+        </h1>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-md-6">
+          <div class="card-enterprise">
+            <div class="card-enterprise-header">
+              <i class="bi bi-person"></i> Edit Profile
+            </div>
+            <div class="card-body">
+              <form id="profileForm" class="form-enterprise">
+                <div class="mb-3">
+                  <label class="form-label">First Name</label>
+                  <input type="text" class="form-control" id="firstName" readonly>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Last Name</label>
+                  <input type="text" class="form-control" id="lastName" readonly>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Email</label>
+                  <input type="email" class="form-control" id="email" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Phone</label>
+                  <input type="tel" class="form-control" id="phone" required>
+                </div>
+                <button type="submit" class="btn-enterprise btn-enterprise-success">
+                  <i class="bi bi-check-circle"></i> Update Profile
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="card-enterprise">
+            <div class="card-enterprise-header">
+              <i class="bi bi-key"></i> Change Password
+            </div>
+            <div class="card-body">
+              <form id="passwordForm" class="form-enterprise">
+                <div class="mb-3">
+                  <label class="form-label">Current Password</label>
+                  <input type="password" class="form-control" id="currentPassword" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">New Password</label>
+                  <input type="password" class="form-control" id="newPassword" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Confirm New Password</label>
+                  <input type="password" class="form-control" id="confirmPassword" required>
+                </div>
+                <button type="submit" class="btn-enterprise btn-enterprise-secondary">
+                  <i class="bi bi-shield-check"></i> Change Password
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hostel Information -->
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-building"></i> Hostel Information
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <p><strong>Hostel Name:</strong></p>
+              <p id="hostelName">Loading...</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Room Number:</strong></p>
+              <p id="roomNumber">Loading...</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Allocation Date:</strong></p>
+              <p id="allocationDate">Loading...</p>
+            </div>
+            <div class="col-md-3">
+              <p><strong>Hostel Fee:</strong></p>
+              <p id="hostelFeeInfo">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications Section -->
+    <div id="notifications" style="display: none;">
+      <div class="page-header-enterprise">
+        <h1>
+          <button class="btn-enterprise btn-enterprise-secondary" onclick="showSection('overview')">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          Notifications
+        </h1>
+      </div>
+      
+      <div class="card-enterprise mt-4">
+        <div class="card-enterprise-header">
+          <i class="bi bi-bell"></i> Recent Announcements
+        </div>
+        <div class="card-body" id="notificationsContainer">
+          <p class="text-center">Loading...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Receipt Modal -->
+  <div class="modal fade" id="receiptModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Payment Receipt</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="payment-receipt" id="receiptContent">
+            <!-- Receipt content will be inserted here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-professional-primary" onclick="downloadReceipt()">
+            <i class="bi bi-download"></i> Download
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/student-extended.js"></script>
+</body>
+</html>

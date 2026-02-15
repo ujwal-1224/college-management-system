@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Navigation Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .navbar {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .nav-link {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 0 5px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: all 0.2s;
+      text-decoration: none;
+      color: #333;
+    }
+    .nav-link:hover {
+      background: #f0f0f0;
+    }
+    .nav-link.active {
+      background: #667eea;
+      color: white;
+      font-weight: bold;
+    }
+    .section {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: none;
+    }
+    .section.active {
+      display: block;
+    }
+    .btn {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .btn:hover {
+      background: #5568d3;
+    }
+    .status {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #10b981;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="status">✓ Navigation Test Active</div>
+  
+  <h1>Student Dashboard Navigation Test</h1>
+  
+  <div class="navbar">
+    <a class="nav-link" href="javascript:void(0)" onclick="showSection('overview')" id="nav-dashboard">Dashboard</a>
+    <a class="nav-link" href="javascript:void(0)" onclick="showSection('courses')" id="nav-courses">Courses</a>
+    <a class="nav-link" href="javascript:void(0)" onclick="showSection('fees')" id="nav-fees">Fees</a>
+    <a class="nav-link" href="javascript:void(0)" onclick="showSection('notifications')" id="nav-notifications">Notifications</a>
+  </div>
+
+  <div id="overview" class="section active">
+    <h2>📚 Dashboard Overview</h2>
+    <p>Welcome to the dashboard! Use the navigation above or quick actions below.</p>
+    <h3>Quick Actions:</h3>
+    <button class="btn" onclick="showSection('courses')">📖 My Courses</button>
+    <button class="btn" onclick="showSection('fees')">💰 Pay Fees</button>
+    <button class="btn" onclick="showSection('notifications')">🔔 Notifications</button>
+  </div>
+
+  <div id="courses" class="section">
+    <h2>📖 My Courses</h2>
+    <button class="btn" onclick="showSection('overview')">← Back to Dashboard</button>
+    <p>This is the courses section. You can view all your enrolled courses here.</p>
+    <ul>
+      <li>CS101 - Introduction to Programming</li>
+      <li>CS201 - Data Structures</li>
+      <li>CS301 - Database Systems</li>
+    </ul>
+  </div>
+
+  <div id="fees" class="section">
+    <h2>💰 Fee & Payment</h2>
+    <button class="btn" onclick="showSection('overview')">← Back to Dashboard</button>
+    <p>This is the fees section. You can view and pay your fees here.</p>
+    <ul>
+      <li>Total Fee: ₹71,000</li>
+      <li>Paid Amount: ₹65,000</li>
+      <li>Pending Dues: ₹6,000</li>
+    </ul>
+  </div>
+
+  <div id="notifications" class="section">
+    <h2>🔔 Notifications</h2>
+    <button class="btn" onclick="showSection('overview')">← Back to Dashboard</button>
+    <p>This is the notifications section. You can view all announcements here.</p>
+    <ul>
+      <li>Welcome to College Management System</li>
+      <li>Mid-term Exams Announcement</li>
+      <li>Library Hours Extended</li>
+    </ul>
+  </div>
+
+  <script>
+    let currentSection = 'overview';
+
+    function showSection(section) {
+      console.log('Navigating to:', section);
+      
+      // Hide all sections
+      document.querySelectorAll('.section').forEach(s => {
+        s.classList.remove('active');
+      });
+      
+      // Show selected section
+      const sectionElement = document.getElementById(section);
+      if (sectionElement) {
+        sectionElement.classList.add('active');
+        currentSection = section;
+        console.log('✓ Section shown:', section);
+      } else {
+        console.error('✗ Section not found:', section);
+      }
+      
+      // Update navbar active state
+      updateNavbarActive(section);
+    }
+
+    function updateNavbarActive(section) {
+      console.log('Updating navbar for:', section);
+      
+      // Remove active class from all nav links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      
+      // Add active class to current section
+      const navMap = {
+        'overview': 'nav-dashboard',
+        'courses': 'nav-courses',
+        'fees': 'nav-fees',
+        'notifications': 'nav-notifications'
+      };
+      
+      const navId = navMap[section];
+      if (navId) {
+        const navLink = document.getElementById(navId);
+        if (navLink) {
+          navLink.classList.add('active');
+          console.log('✓ Navbar updated:', navId);
+        } else {
+          console.error('✗ Nav link not found:', navId);
+        }
+      }
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('=== Navigation Test Initialized ===');
+      updateNavbarActive('overview');
+      console.log('Current section:', currentSection);
+    });
+
+    // Log all clicks for debugging
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('nav-link') || e.target.classList.contains('btn')) {
+        console.log('Click detected on:', e.target.textContent.trim());
+      }
+    });
+  </script>
+</body>
+</html>

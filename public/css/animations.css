@@ -1,0 +1,85 @@
+/* ============================================
+   ANIMATIONS.CSS - Optimized Fast Animations
+   ============================================ */
+
+/* REMOVED: All slow entrance animations for instant loading */
+/* REMOVED: All animation delays for immediate display */
+/* KEPT: Only essential hover and interaction animations */
+
+/* Fast Hover Effects - Under 200ms */
+.hover-lift {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.hover-scale {
+  transition: transform 0.15s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-glow {
+  transition: box-shadow 0.2s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px rgba(102, 126, 234, 0.4);
+}
+
+/* Fast Button Ripple Effect */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.btn-ripple:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Loading Spinner - Only for actual loading states */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Smooth Transitions - Fast */
+.smooth-transition {
+  transition: all 0.15s ease;
+}
+
+/* REMOVED: All entrance animations, delays, and slow effects */
+/* REMOVED: Float, pulse, shimmer, gradientShift animations */
+/* REMOVED: Card entrance animations */
+/* REMOVED: Progress bar animations */
+/* REMOVED: Skeleton loading */
+
+/* Keep only essential interaction feedback */
+

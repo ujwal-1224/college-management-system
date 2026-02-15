@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/enterprise-theme.css">
+</head>
+<body>
+  <nav class="navbar-enterprise navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/admin/dashboard">College Portal</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="/admin/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/attendance-reports">Attendance</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/results-reports">Results</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-enterprise">
+    <div class="page-header-enterprise">
+      <h1>Admin Dashboard</h1>
+      <p>System overview and statistics</p>
+    </div>
+    
+    <div class="row">
+      <div class="col-md-4 mb-4">
+        <div class="stat-card-enterprise">
+          <div class="stat-icon">
+            <i class="bi bi-people"></i>
+          </div>
+          <div class="stat-label">Total Students</div>
+          <div class="stat-value" id="totalStudents">0</div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="stat-card-enterprise">
+          <div class="stat-icon">
+            <i class="bi bi-person-workspace"></i>
+          </div>
+          <div class="stat-label">Total Faculty</div>
+          <div class="stat-value" id="totalFaculty">0</div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="stat-card-enterprise">
+          <div class="stat-icon">
+            <i class="bi bi-book"></i>
+          </div>
+          <div class="stat-label">Total Courses</div>
+          <div class="stat-value" id="totalCourses">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-enterprise">
+      <div class="card-enterprise-header">
+        <i class="bi bi-people"></i> Recent Students
+      </div>
+      <div class="table-responsive">
+        <table class="table-enterprise">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Department</th>
+              <th>Semester</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTable">
+            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

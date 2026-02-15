@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Reports - Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/enterprise-theme.css">
+</head>
+<body>
+  <nav class="navbar-enterprise navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/admin/dashboard">College Portal</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/admin/attendance-reports">Attendance</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/results-reports">Results</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-enterprise">
+    <div class="page-header-enterprise">
+      <h1>Attendance Reports</h1>
+      <p>View and analyze attendance data</p>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card-enterprise">
+          <div class="card-enterprise-header">
+            <i class="bi bi-funnel"></i> Filter Reports
+          </div>
+          <div class="card-body">
+            <form id="filterForm" class="row g-3 form-enterprise">
+              <div class="col-md-3">
+                <label for="courseFilter" class="form-label">Course</label>
+                <select class="form-select" id="courseFilter">
+                  <option value="">All Courses</option>
+                </select>
+              </div>
+              
+              <div class="col-md-3">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="startDate">
+              </div>
+              
+              <div class="col-md-3">
+                <label for="endDate" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="endDate">
+              </div>
+              
+              <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn-enterprise btn-enterprise-primary w-100">Generate Report</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-md-3">
+        <div class="stat-card-enterprise" style="border-left-color: var(--success);">
+          <div class="stat-label">Total Present</div>
+          <div class="stat-value" id="totalPresent" style="color: var(--success);">0</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card-enterprise" style="border-left-color: var(--error);">
+          <div class="stat-label">Total Absent</div>
+          <div class="stat-value" id="totalAbsent" style="color: var(--error);">0</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card-enterprise" style="border-left-color: var(--warning);">
+          <div class="stat-label">Total Late</div>
+          <div class="stat-value" id="totalLate" style="color: var(--warning);">0</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card-enterprise" style="border-left-color: var(--info);">
+          <div class="stat-label">Attendance Rate</div>
+          <div class="stat-value" id="attendanceRate" style="color: var(--info);">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-enterprise mt-4">
+      <div class="card-enterprise-header">
+        <i class="bi bi-table"></i> Attendance Records
+      </div>
+      <div class="table-responsive">
+        <table class="table-enterprise">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Student</th>
+              <th>Course</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTable">
+            <tr><td colspan="4" class="text-center">Select filters and click Generate Report</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/admin-attendance.js"></script>
+</body>
+</html>
