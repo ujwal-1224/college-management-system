@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { isAuthenticated, isRole } = require('../middleware/auth');
 const db = require('../config/database');
+const { calculateGrade } = require('../utils/helpers');
 
 router.use(isAuthenticated);
 router.use(isRole('staff'));
@@ -183,6 +184,11 @@ router.get('/api/exam-grades/:examId', async (req, res) => {
 router.post('/api/create-exam', async (req, res) => {
   try {
     const { course_id, exam_name, exam_date, max_marks } = req.body;
+
+    const maxMarksNumeric = parseInt(max_marks, 10);
+    if (Number.isNaN(maxMarksNumeric) || maxMarksNumeric < 1 || maxMarksNumeric > 100) {
+      return res.status(400).json({ success: false, message: 'Max marks must be 1-100' });
+    }
     
     // Verify staff has access to this course
     const [staff] = await db.query('SELECT staff_id FROM Staff WHERE user_id = ?', [req.session.userId]);
@@ -200,8 +206,9 @@ router.post('/api/create-exam', async (req, res) => {
     }
     
     await db.query(
-      'INSERT INTO Exam (course_id, exam_name, exam_date, max_marks) VALUES (?, ?, ?, ?)',
-      [course_id, exam_name, exam_date, max_marks]
+      `INSERT INTO Exam (course_id, exam_name, exam_type, exam_date, max_marks, created_by)
+       VALUES (?, ?, 'mid_term', ?, ?, ?)`,
+      [course_id, exam_name, exam_date, maxMarksNumeric, staff[0].staff_id]
     );
     
     res.json({ success: true, message: 'Exam created successfully' });
@@ -228,7 +235,7 @@ router.post('/api/save-grades', async (req, res) => {
     // Verify exam belongs to staff's course
     const examId = grades[0].exam_id;
     const [exam] = await db.query(
-      `SELECT e.exam_id FROM Exam e
+      `SELECT e.exam_id, e.max_marks FROM Exam e
        JOIN Course c ON e.course_id = c.course_id
        WHERE e.exam_id = ? AND c.staff_id = ?`,
       [examId, staff[0].staff_id]
@@ -237,14 +244,24 @@ router.post('/api/save-grades', async (req, res) => {
     if (exam.length === 0) {
       return res.status(403).json({ success: false, message: 'Access denied to this exam' });
     }
+
+    const maxMarks = parseFloat(exam[0].max_marks);
     
-    // Insert or update grades
     for (const grade of grades) {
+      const marks = parseFloat(grade.marks_obtained);
+      if (Number.isNaN(marks) || marks < 0 || marks > maxMarks) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid marks. Marks must be between 0 and ${maxMarks}`
+        });
+      }
+
+      const computedGrade = calculateGrade(marks, maxMarks);
       await db.query(
         `INSERT INTO Result (student_id, exam_id, marks_obtained, grade) 
          VALUES (?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE marks_obtained = ?, grade = ?`,
-        [grade.student_id, grade.exam_id, grade.marks_obtained, grade.grade, grade.marks_obtained, grade.grade]
+        [grade.student_id, examId, marks, computedGrade, marks, computedGrade]
       );
     }
     

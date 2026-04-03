@@ -228,24 +228,46 @@ router.get('/api/payment-history', async (req, res) => {
   }
 });
 
-// Make Payment (Simulation)
+// Make Payment
 router.post('/api/make-payment', async (req, res) => {
   try {
     const { amount, paymentMethod, description } = req.body;
-    const [student] = await db.query('SELECT student_id, semester FROM Student WHERE user_id = ?', [req.session.userId]);
+
+    if (amount === undefined || amount === null) {
+      return res.status(400).json({ error: 'Amount is required' });
+    }
+
+    const numericAmount = parseFloat(amount);
+    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({ error: 'Amount must be a positive number' });
+    }
+
+    let normalizedMethod = typeof paymentMethod === 'string' ? paymentMethod.trim().toLowerCase() : '';
+    if (normalizedMethod === 'net banking' || normalizedMethod === 'online payment') normalizedMethod = 'online';
+    if (normalizedMethod === 'card' || normalizedMethod === 'credit/debit card') normalizedMethod = 'card';
+
+    const allowed = ['cash', 'card', 'online', 'upi', 'cheque'];
+    if (!allowed.includes(normalizedMethod)) {
+      return res.status(400).json({ error: 'Invalid payment method' });
+    }
+
+    const [student] = await db.query(
+      'SELECT student_id, semester FROM Student WHERE user_id = ?',
+      [req.session.userId]
+    );
     if (student.length === 0) return res.status(404).json({ error: 'Student not found' });
-    
+
     const receiptNumber = 'RCP' + Date.now();
     const transactionId = 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    
+
     await db.query(
       `INSERT INTO FeePayment (student_id, amount, payment_date, payment_method, semester, status, receipt_number, transaction_id, description)
        VALUES (?, ?, CURDATE(), ?, ?, 'paid', ?, ?, ?)`,
-      [student[0].student_id, amount, paymentMethod, student[0].semester, receiptNumber, transactionId, description]
+      [student[0].student_id, numericAmount, normalizedMethod, student[0].semester, receiptNumber, transactionId, description]
     );
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Payment successful',
       receiptNumber,
       transactionId

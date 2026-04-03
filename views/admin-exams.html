@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Management - Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/enterprise-theme.css">
+</head>
+<body>
+<nav class="navbar-enterprise navbar navbar-expand-lg">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/admin/dashboard"><i class="bi bi-mortarboard-fill me-2"></i>Admin Portal</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/students">Students</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/staff">Staff</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/courses">Courses</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/timetable">Timetable</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/admin/exams">Exams</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/fees">Fees</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/notifications">Notifications</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/settings">Settings</a></li>
+        <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container-enterprise">
+  <div class="page-header-enterprise d-flex justify-content-between align-items-center">
+    <div><h1>Exam Management</h1><p class="mb-0">Schedule exams, manage results, and publish grades</p></div>
+    <button class="btn-enterprise btn-enterprise-primary" onclick="openAddModal()"><i class="bi bi-plus-circle me-1"></i>Add Exam</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-2"><div class="stat-card-enterprise"><div class="stat-label">Total Exams</div><div class="stat-value" id="totalExams">—</div></div></div>
+    <div class="col-md-3 mb-2"><div class="stat-card-enterprise" style="border-left-color:#6366f1"><div class="stat-label">This Month</div><div class="stat-value" id="thisMonthExams" style="color:#6366f1">—</div></div></div>
+    <div class="col-md-3 mb-2"><div class="stat-card-enterprise" style="border-left-color:#22c55e"><div class="stat-label">Published Results</div><div class="stat-value" id="publishedResults" style="color:#22c55e">—</div></div></div>
+    <div class="col-md-3 mb-2"><div class="stat-card-enterprise" style="border-left-color:#f59e0b"><div class="stat-label">Pending Results</div><div class="stat-value" id="pendingResults" style="color:#f59e0b">—</div></div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card-enterprise mb-4">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3"><input type="text" class="form-control" id="searchInput" placeholder="Search exam name..." oninput="debounceSearch()"></div>
+        <div class="col-md-2">
+          <select class="form-select" id="courseFilter" onchange="loadExams()">
+            <option value="">All Courses</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" id="typeFilter" onchange="loadExams()">
+            <option value="">All Types</option>
+            <option value="mid_term">Mid Term</option>
+            <option value="final">Final</option>
+            <option value="quiz">Quiz</option>
+            <option value="assignment">Assignment</option>
+            <option value="practical">Practical</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" id="limitSelect" onchange="loadExams()">
+            <option value="10">10 per page</option><option value="25">25 per page</option><option value="50">50 per page</option>
+          </select>
+        </div>
+        <div class="col-md-2"><button class="btn-enterprise btn-enterprise-secondary w-100" onclick="resetFilters()"><i class="bi bi-x-circle me-1"></i>Reset</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card-enterprise">
+    <div class="card-enterprise-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-journal-check me-2"></i>Exams List</span>
+      <span class="text-muted small" id="resultCount"></span>
+    </div>
+    <div class="table-responsive">
+      <table class="table-enterprise">
+        <thead>
+          <tr>
+            <th>Exam Name</th><th>Course</th><th>Type</th><th>Date</th>
+            <th>Max Marks</th><th>Submissions</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="examsTableBody"><tr><td colspan="7" class="text-center py-4">Loading...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card-body d-flex justify-content-between align-items-center" id="paginationContainer"></div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="examModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Add Exam</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="examForm">
+          <input type="hidden" id="examId">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <label class="form-label">Course *</label>
+              <select class="form-select" id="courseId" required>
+                <option value="">Select Course</option>
+              </select>
+            </div>
+            <div class="col-md-8"><label class="form-label">Exam Name *</label><input type="text" class="form-control" id="examName" required></div>
+            <div class="col-md-4">
+              <label class="form-label">Exam Type *</label>
+              <select class="form-select" id="examType" required>
+                <option value="">Select Type</option>
+                <option value="mid_term">Mid Term</option>
+                <option value="final">Final</option>
+                <option value="quiz">Quiz</option>
+                <option value="assignment">Assignment</option>
+                <option value="practical">Practical</option>
+              </select>
+            </div>
+            <div class="col-md-4"><label class="form-label">Exam Date *</label><input type="date" class="form-control" id="examDate" required></div>
+            <div class="col-md-4"><label class="form-label">Max Marks *</label><input type="number" class="form-control" id="maxMarks" min="1" required></div>
+            <div class="col-md-4"><label class="form-label">Duration (minutes)</label><input type="number" class="form-control" id="durationMinutes" min="1"></div>
+            <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" id="description" rows="3"></textarea></div>
+          </div>
+          <div id="formError" class="alert alert-danger mt-3 d-none"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-enterprise btn-enterprise-primary" onclick="saveExam()" id="saveBtn">Save Exam</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Results Modal -->
+<div class="modal fade" id="resultsModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="resultsModalTitle">Exam Results</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="resultsTableContainer">
+          <div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> Loading students...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-success" id="saveResultsBtn">Save Results</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/admin-exams.js"></script>
+</body>
+</html>
