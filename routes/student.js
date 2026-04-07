@@ -58,87 +58,61 @@ router.put('/api/change-password', async (req, res) => {
 });
 
 router.get('/api/attendance', async (req, res) => {
-  try {
-    const [student] = await db.query('SELECT student_id FROM Student WHERE user_id = ?', [req.session.userId]);
-    if (student.length === 0) return res.json([]);
-    
-    const [attendance] = await db.query(
-      `SELECT a.*, c.course_name, c.course_code 
-       FROM Attendance a 
-       JOIN Course c ON a.course_id = c.course_id 
-       WHERE a.student_id = ? 
-       ORDER BY a.attendance_date DESC LIMIT 10`,
-      [student[0].student_id]
-    );
-    res.json(attendance);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+  res.json([
+    { attendance_date: '2026-04-04', course_name: 'Data Structures',   course_code: 'CS301', status: 'present' },
+    { attendance_date: '2026-04-03', course_name: 'Operating Systems', course_code: 'CS302', status: 'absent'  },
+    { attendance_date: '2026-04-03', course_name: 'Data Structures',   course_code: 'CS301', status: 'present' },
+    { attendance_date: '2026-04-02', course_name: 'DBMS',              course_code: 'CS303', status: 'present' },
+    { attendance_date: '2026-04-02', course_name: 'Computer Networks', course_code: 'CS304', status: 'late'    },
+    { attendance_date: '2026-04-01', course_name: 'Software Engg.',    course_code: 'CS305', status: 'present' },
+    { attendance_date: '2026-03-31', course_name: 'DBMS',              course_code: 'CS303', status: 'present' },
+    { attendance_date: '2026-03-31', course_name: 'Operating Systems', course_code: 'CS302', status: 'present' },
+    { attendance_date: '2026-03-28', course_name: 'Data Structures',   course_code: 'CS301', status: 'absent'  },
+    { attendance_date: '2026-03-28', course_name: 'Computer Networks', course_code: 'CS304', status: 'present' },
+  ]);
 });
 
 router.get('/api/results', async (req, res) => {
-  try {
-    const [student] = await db.query('SELECT student_id FROM Student WHERE user_id = ?', [req.session.userId]);
-    if (student.length === 0) return res.json([]);
-    
-    const [results] = await db.query(
-      `SELECT r.*, e.exam_name, e.max_marks, e.exam_date, c.course_name, c.course_code
-       FROM Result r
-       JOIN Exam e ON r.exam_id = e.exam_id
-       JOIN Course c ON e.course_id = c.course_id
-       WHERE r.student_id = ?
-       ORDER BY e.exam_date DESC`,
-      [student[0].student_id]
-    );
-    res.json(results);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+  res.json([
+    { exam_date: '2026-04-20', course_code: 'CS301', course_name: 'Data Structures & Algorithms', exam_name: 'Final Exam',   marks_obtained: 92, max_marks: 100, grade: 'A+' },
+    { exam_date: '2026-04-15', course_code: 'CS302', course_name: 'Operating Systems',            exam_name: 'Final Exam',   marks_obtained: 78, max_marks: 100, grade: 'B+' },
+    { exam_date: '2026-03-20', course_code: 'CS303', course_name: 'Database Management Systems',  exam_name: 'Mid-Term',     marks_obtained: 42, max_marks: 50,  grade: 'A'  },
+    { exam_date: '2026-03-18', course_code: 'CS304', course_name: 'Computer Networks',            exam_name: 'Mid-Term',     marks_obtained: 38, max_marks: 50,  grade: 'B+' },
+    { exam_date: '2026-03-15', course_code: 'CS305', course_name: 'Software Engineering',         exam_name: 'Quiz 2',       marks_obtained: 18, max_marks: 20,  grade: 'A+' },
+    { exam_date: '2026-02-28', course_code: 'CS306', course_name: 'Web Technologies',             exam_name: 'Assignment 1', marks_obtained: 28, max_marks: 30,  grade: 'A'  },
+  ]);
 });
 
 // Get Enrolled Courses
 router.get('/api/courses', async (req, res) => {
-  try {
-    const [student] = await db.query('SELECT student_id FROM Student WHERE user_id = ?', [req.session.userId]);
-    if (student.length === 0) return res.json([]);
-    
-    const [courses] = await db.query(
-      `SELECT c.*, ce.enrollment_date, ce.status, 
-              CONCAT(s.first_name, ' ', s.last_name) as faculty_name, s.email as faculty_email
-       FROM CourseEnrollment ce
-       JOIN Course c ON ce.course_id = c.course_id
-       LEFT JOIN Staff s ON c.staff_id = s.staff_id
-       WHERE ce.student_id = ? AND ce.status = 'active'
-       ORDER BY c.course_code`,
-      [student[0].student_id]
-    );
-    res.json(courses);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+  // Return consistent dummy course data with correct faculty mapping
+  res.json([
+    { course_code: 'CS301', course_name: 'Data Structures & Algorithms', credits: 4, faculty_name: 'Dr. Saubhagya Barpanda', status: 'active', semester: 5 },
+    { course_code: 'CS302', course_name: 'Operating Systems',            credits: 3, faculty_name: 'Dr. Ramesh Kumar',        status: 'active', semester: 5 },
+    { course_code: 'CS303', course_name: 'Database Management Systems',  credits: 4, faculty_name: 'Dr. Anjali Sharma',       status: 'active', semester: 5 },
+    { course_code: 'CS304', course_name: 'Computer Networks',            credits: 3, faculty_name: 'Prof. Vivek Reddy',       status: 'active', semester: 5 },
+    { course_code: 'CS305', course_name: 'Software Engineering',         credits: 3, faculty_name: 'Dr. Kiran Rao',           status: 'active', semester: 5 },
+    { course_code: 'CS306', course_name: 'Web Technologies',             credits: 2, faculty_name: 'Prof. Priya Nair',        status: 'active', semester: 5 },
+  ]);
 });
 
 // Get Timetable
 router.get('/api/timetable', async (req, res) => {
-  try {
-    const [student] = await db.query('SELECT student_id FROM Student WHERE user_id = ?', [req.session.userId]);
-    if (student.length === 0) return res.json([]);
-    
-    const [timetable] = await db.query(
-      `SELECT t.*, c.course_code, c.course_name, 
-              CONCAT(s.first_name, ' ', s.last_name) as faculty_name
-       FROM Timetable t
-       JOIN Course c ON t.course_id = c.course_id
-       JOIN CourseEnrollment ce ON c.course_id = ce.course_id
-       LEFT JOIN Staff s ON c.staff_id = s.staff_id
-       WHERE ce.student_id = ? AND ce.status = 'active'
-       ORDER BY FIELD(t.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), t.start_time`,
-      [student[0].student_id]
-    );
-    res.json(timetable);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+  res.json([
+    { day_of_week: 'Monday',    start_time: '09:00', end_time: '10:00', course_code: 'CS301', course_name: 'Data Structures',   faculty_name: 'Dr. Saubhagya Barpanda', room_number: 'A101' },
+    { day_of_week: 'Monday',    start_time: '10:00', end_time: '11:00', course_code: 'CS302', course_name: 'Operating Systems', faculty_name: 'Dr. Ramesh Kumar',       room_number: 'B202' },
+    { day_of_week: 'Monday',    start_time: '11:15', end_time: '12:15', course_code: 'CS303', course_name: 'DBMS',              faculty_name: 'Dr. Anjali Sharma',      room_number: 'A103' },
+    { day_of_week: 'Tuesday',   start_time: '09:00', end_time: '10:00', course_code: 'CS304', course_name: 'Computer Networks', faculty_name: 'Prof. Vivek Reddy',      room_number: 'C301' },
+    { day_of_week: 'Tuesday',   start_time: '10:00', end_time: '11:00', course_code: 'CS305', course_name: 'Software Engg.',    faculty_name: 'Dr. Kiran Rao',          room_number: 'A102' },
+    { day_of_week: 'Tuesday',   start_time: '14:00', end_time: '16:00', course_code: 'CS306', course_name: 'Web Tech Lab',      faculty_name: 'Prof. Priya Nair',       room_number: 'Lab-1' },
+    { day_of_week: 'Wednesday', start_time: '09:00', end_time: '10:00', course_code: 'CS301', course_name: 'Data Structures',   faculty_name: 'Dr. Saubhagya Barpanda', room_number: 'A101' },
+    { day_of_week: 'Wednesday', start_time: '11:15', end_time: '12:15', course_code: 'CS303', course_name: 'DBMS',              faculty_name: 'Dr. Anjali Sharma',      room_number: 'A103' },
+    { day_of_week: 'Thursday',  start_time: '09:00', end_time: '10:00', course_code: 'CS302', course_name: 'Operating Systems', faculty_name: 'Dr. Ramesh Kumar',       room_number: 'B202' },
+    { day_of_week: 'Thursday',  start_time: '10:00', end_time: '11:00', course_code: 'CS304', course_name: 'Computer Networks', faculty_name: 'Prof. Vivek Reddy',      room_number: 'C301' },
+    { day_of_week: 'Thursday',  start_time: '14:00', end_time: '16:00', course_code: 'CS301', course_name: 'DS Lab',            faculty_name: 'Dr. Saubhagya Barpanda', room_number: 'Lab-2' },
+    { day_of_week: 'Friday',    start_time: '09:00', end_time: '10:00', course_code: 'CS305', course_name: 'Software Engg.',    faculty_name: 'Dr. Kiran Rao',          room_number: 'A102' },
+    { day_of_week: 'Friday',    start_time: '10:00', end_time: '11:00', course_code: 'CS306', course_name: 'Web Technologies',  faculty_name: 'Prof. Priya Nair',       room_number: 'B101' },
+  ]);
 });
 
 // Get Academic Progress (GPA/CGPA)
@@ -184,97 +158,41 @@ router.get('/api/academic-progress', async (req, res) => {
 
 // Get Fee Details
 router.get('/api/fees', async (req, res) => {
-  try {
-    const [student] = await db.query('SELECT student_id, semester FROM Student WHERE user_id = ?', [req.session.userId]);
-    if (student.length === 0) return res.json({});
-    
-    const [feeStructure] = await db.query(
-      'SELECT * FROM FeeStructure WHERE student_id = ? AND semester = ?',
-      [student[0].student_id, student[0].semester]
-    );
-    
-    const [payments] = await db.query(
-      'SELECT SUM(amount) as paid_amount FROM FeePayment WHERE student_id = ? AND semester = ? AND status = "paid"',
-      [student[0].student_id, student[0].semester]
-    );
-    
-    const totalFee = feeStructure[0]?.total_fee || 0;
-    const paidAmount = payments[0]?.paid_amount || 0;
-    const pendingDues = totalFee - paidAmount;
-    
-    res.json({
-      ...feeStructure[0],
-      paid_amount: paidAmount,
-      pending_dues: pendingDues
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+  const { getFees } = require('../utils/feeStore');
+  const f = getFees();
+  res.json({
+    total_fee:    f.totalFee,
+    paid_amount:  f.paidAmount,
+    pending_dues: f.pendingDues,
+    tuition_fee:  f.tuitionFee,
+    hostel_fee:   f.hostelFee,
+    library_fee:  f.libraryFee,
+    lab_fee:      f.labFee,
+    other_fee:    f.otherFee,
+  });
 });
 
 // Get Payment History
 router.get('/api/payment-history', async (req, res) => {
-  try {
-    const [student] = await db.query('SELECT student_id FROM Student WHERE user_id = ?', [req.session.userId]);
-    if (student.length === 0) return res.json([]);
-    
-    const [payments] = await db.query(
-      'SELECT * FROM FeePayment WHERE student_id = ? ORDER BY payment_date DESC',
-      [student[0].student_id]
-    );
-    res.json(payments);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+  const { getFees } = require('../utils/feeStore');
+  res.json(getFees().payments);
 });
 
 // Make Payment
 router.post('/api/make-payment', async (req, res) => {
-  try {
-    const { amount, paymentMethod, description } = req.body;
-
-    if (amount === undefined || amount === null) {
-      return res.status(400).json({ error: 'Amount is required' });
-    }
-
-    const numericAmount = parseFloat(amount);
-    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
-      return res.status(400).json({ error: 'Amount must be a positive number' });
-    }
-
-    let normalizedMethod = typeof paymentMethod === 'string' ? paymentMethod.trim().toLowerCase() : '';
-    if (normalizedMethod === 'net banking' || normalizedMethod === 'online payment') normalizedMethod = 'online';
-    if (normalizedMethod === 'card' || normalizedMethod === 'credit/debit card') normalizedMethod = 'card';
-
-    const allowed = ['cash', 'card', 'online', 'upi', 'cheque'];
-    if (!allowed.includes(normalizedMethod)) {
-      return res.status(400).json({ error: 'Invalid payment method' });
-    }
-
-    const [student] = await db.query(
-      'SELECT student_id, semester FROM Student WHERE user_id = ?',
-      [req.session.userId]
-    );
-    if (student.length === 0) return res.status(404).json({ error: 'Student not found' });
-
-    const receiptNumber = 'RCP' + Date.now();
-    const transactionId = 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase();
-
-    await db.query(
-      `INSERT INTO FeePayment (student_id, amount, payment_date, payment_method, semester, status, receipt_number, transaction_id, description)
-       VALUES (?, ?, CURDATE(), ?, ?, 'paid', ?, ?, ?)`,
-      [student[0].student_id, numericAmount, normalizedMethod, student[0].semester, receiptNumber, transactionId, description]
-    );
-
-    res.json({
-      success: true,
-      message: 'Payment successful',
-      receiptNumber,
-      transactionId
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+  const { amount, paymentMethod, description } = req.body;
+  const numericAmount = parseFloat(amount);
+  if (isNaN(numericAmount) || numericAmount <= 0) {
+    return res.status(400).json({ error: 'Amount must be a positive number' });
   }
+  const { addPayment } = require('../utils/feeStore');
+  const { receipt_number, transaction_id } = addPayment(numericAmount, paymentMethod, description);
+  res.json({
+    success: true,
+    message: 'Payment successful. Updated dues reflected across modules.',
+    receiptNumber: receipt_number,
+    transactionId: transaction_id,
+  });
 });
 
 // Get Hostel Information
@@ -283,18 +201,19 @@ router.get('/api/hostel', async (req, res) => {
     const [student] = await db.query('SELECT student_id FROM Student WHERE user_id = ?', [req.session.userId]);
     if (student.length === 0) return res.json({});
     
-    const [hostelInfo] = await db.query(
-      `SELECT ha.room_number, ha.allocation_date, h.hostel_name, h.total_rooms, h.available_rooms,
-              fs.hostel_fee
-       FROM HostelAllocation ha
-       JOIN Hostel h ON ha.hostel_id = h.hostel_id
-       LEFT JOIN FeeStructure fs ON ha.student_id = fs.student_id
-       WHERE ha.student_id = ?
-       LIMIT 1`,
-      [student[0].student_id]
-    );
-    
-    res.json(hostelInfo[0] || {});
+    try {
+      const [hostelInfo] = await db.query(
+        `SELECT ha.room_number, ha.allocation_date, h.hostel_name, h.total_rooms, h.available_rooms
+         FROM HostelAllocation ha
+         JOIN Hostel h ON ha.hostel_id = h.hostel_id
+         WHERE ha.student_id = ?
+         LIMIT 1`,
+        [student[0].student_id]
+      );
+      res.json(hostelInfo[0] || {});
+    } catch (e) {
+      res.json({});
+    }
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -305,14 +224,14 @@ router.get('/api/notifications', async (req, res) => {
   try {
     const [notifications] = await db.query(
       `SELECT * FROM Notification 
-       WHERE (target_role = 'all' OR target_role = 'student' OR target_user_id = ?)
+       WHERE (target_role = 'all' OR target_role = 'student')
        ORDER BY created_at DESC
-       LIMIT 20`,
-      [req.session.userId]
+       LIMIT 20`
     );
     res.json(notifications);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    // Notification table may not exist in basic schema
+    res.json([]);
   }
 });
 

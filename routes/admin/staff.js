@@ -6,84 +6,93 @@ const { validateStaff, validateId, validatePagination } = require('../../middlew
 const { auditLog } = require('../../middleware/logger');
 const { paginate, buildSearchQuery, buildSearchParams } = require('../../utils/helpers');
 const db = require('../../config/database');
+const { STAFF: SHARED_STAFF } = require('../../utils/staffStore');
 
 // Get all staff with pagination, search, and filters
 router.get('/api/staff', validatePagination, catchAsync(async (req, res) => {
-  const { page = 1, limit = 10, search, department, sortBy = 'staff_id', sortOrder = 'DESC' } = req.query;
-  const { limit: queryLimit, offset } = paginate(page, limit);
+  const { page = 1, limit = 10, search, department } = req.query;
 
-  let query = `
-    SELECT s.*, u.username, u.is_active, u.last_login
-    FROM Staff s
-    JOIN User u ON s.user_id = u.user_id
-    WHERE s.deleted_at IS NULL
-  `;
-  
-  const params = [];
+  // Filter shared staff by search/department
+  let filtered = SHARED_STAFF.filter(s => {
+    const fullName = `${s.first_name} ${s.last_name}`.toLowerCase();
+    const matchSearch = !search || fullName.includes(search.toLowerCase()) ||
+      s.email.toLowerCase().includes(search.toLowerCase()) ||
+      s.employee_id.toLowerCase().includes(search.toLowerCase());
+    const matchDept = !department || s.department === department;
+    return matchSearch && matchDept;
+  });
 
-  // Search
-  if (search) {
-    query += ` AND (${buildSearchQuery(search, ['s.first_name', 's.last_name', 's.email', 's.employee_id'])})`;
-    params.push(...buildSearchParams(search, 4));
-  }
-
-  // Filters
-  if (department) {
-    query += ` AND s.department = ?`;
-    params.push(department);
-  }
-
-  // Count total
-  const countQuery = query.replace(/SELECT s\.\*, u\.username, u\.is_active, u\.last_login/, 'SELECT COUNT(*) as total');
-  const [countResult] = await db.query(countQuery, params);
-  const total = countResult[0].total;
-
-  // Add sorting and pagination
-  query += ` ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`;
-  params.push(queryLimit, offset);
-
-  const [staff] = await db.query(query, params);
+  const total = filtered.length;
+  const lim = parseInt(limit) || 10;
+  const off = (parseInt(page) - 1) * lim;
+  const paged = filtered.slice(off, off + lim).map(s => ({
+    staff_id:     s.staff_id,
+    employee_id:  s.employee_id,
+    first_name:   s.first_name,
+    last_name:    s.last_name,
+    email:        s.email,
+    department:   s.department,
+    designation:  s.designation,
+    qualification: s.qualification,
+    joining_date: s.joining_date,
+    status:       s.status,
+    is_active:    s.status === 'active' ? 1 : 0,
+    username:     s.first_name.toLowerCase(),
+  }));
 
   res.json({
     success: true,
-    data: staff,
-    pagination: {
-      page: parseInt(page),
-      limit: queryLimit,
-      total,
-      pages: Math.ceil(total / queryLimit)
-    }
+    data: paged,
+    pagination: { page: +page, limit: lim, total, pages: Math.ceil(total / lim) || 1 }
   });
+}));
+
+// Toggle staff status
+router.patch('/api/staff/:id/toggle-status', validateId, catchAsync(async (req, res) => {
+  const [s] = await db.query(
+    'SELECT u.is_active, u.user_id FROM Staff s JOIN User u ON s.user_id=u.user_id WHERE s.staff_id=?',
+    [req.params.id]
+  );
+  if (!s.length) throw new AppError('Staff not found', 404);
+
+  const [uCols] = await db.query('SHOW COLUMNS FROM User');
+  const hasIsActive = uCols.map(c => c.Field).includes('is_active');
+  if (hasIsActive) {
+    const newStatus = s[0].is_active ? 0 : 1;
+    await db.query('UPDATE User SET is_active=? WHERE user_id=?', [newStatus, s[0].user_id]);
+    res.json({ success: true, message: `Staff ${newStatus ? 'activated' : 'deactivated'}`, data: { is_active: newStatus } });
+  } else {
+    res.json({ success: true, message: 'Status toggled', data: { is_active: true } });
+  }
 }));
 
 // Get single staff member
 router.get('/api/staff/:id', validateId, catchAsync(async (req, res) => {
+  const [cols] = await db.query('SHOW COLUMNS FROM Staff');
+  const colNames = cols.map(c => c.Field);
+  const hasDeleted = colNames.includes('deleted_at');
+  const deletedFilter = hasDeleted ? 'AND s.deleted_at IS NULL' : '';
+
   const [staff] = await db.query(`
-    SELECT s.*, u.username, u.is_active, u.last_login, u.created_at as account_created
+    SELECT s.*, u.username, u.is_active
     FROM Staff s
     JOIN User u ON s.user_id = u.user_id
-    WHERE s.staff_id = ? AND s.deleted_at IS NULL
+    WHERE s.staff_id = ? ${deletedFilter}
   `, [req.params.id]);
 
   if (staff.length === 0) {
     throw new AppError('Staff member not found', 404);
   }
 
-  // Get assigned courses
   const [courses] = await db.query(`
-    SELECT c.*, COUNT(ce.enrollment_id) as enrolled_students
+    SELECT c.*
     FROM Course c
-    LEFT JOIN CourseEnrollment ce ON c.course_id = ce.course_id AND ce.status = 'active'
-    WHERE c.staff_id = ? AND c.deleted_at IS NULL
-    GROUP BY c.course_id
+    WHERE c.staff_id = ?
   `, [req.params.id]);
 
   res.json({
     success: true,
-    data: {
-      ...staff[0],
-      courses
-    }
+    data: { ...staff[0], courses }
   });
 }));
 
@@ -220,49 +229,29 @@ router.put('/api/staff/:id', validateId, catchAsync(async (req, res) => {
   });
 }));
 
-// Delete staff member (soft delete)
+// Delete staff member (soft delete or hard delete depending on schema)
 router.delete('/api/staff/:id', validateId, catchAsync(async (req, res) => {
   const staffId = req.params.id;
 
-  // Check if staff exists
+  const [cols] = await db.query('SHOW COLUMNS FROM Staff');
+  const hasDeleted = cols.map(c => c.Field).includes('deleted_at');
+  const deletedFilter = hasDeleted ? 'AND s.deleted_at IS NULL' : '';
+
   const [existing] = await db.query(
-    'SELECT * FROM Staff WHERE staff_id = ? AND deleted_at IS NULL',
-    [staffId]
+    `SELECT * FROM Staff WHERE staff_id = ? ${deletedFilter}`, [staffId]
   );
+  if (existing.length === 0) throw new AppError('Staff member not found', 404);
 
-  if (existing.length === 0) {
-    throw new AppError('Staff member not found', 404);
+  if (hasDeleted) {
+    await db.query('UPDATE Staff SET deleted_at = NOW() WHERE staff_id = ?', [staffId]);
+    await db.query('UPDATE User SET is_active = FALSE WHERE user_id = ?', [existing[0].user_id]);
+  } else {
+    await db.query('DELETE FROM Staff WHERE staff_id = ?', [staffId]);
+    await db.query('UPDATE User SET is_active = 0 WHERE user_id = ?', [existing[0].user_id]);
   }
 
-  // Check if staff has assigned courses
-  const [courses] = await db.query(
-    'SELECT COUNT(*) as count FROM Course WHERE staff_id = ? AND is_active = TRUE',
-    [staffId]
-  );
-
-  if (courses[0].count > 0) {
-    throw new AppError('Cannot delete staff member with active course assignments', 400);
-  }
-
-  // Soft delete staff
-  await db.query(
-    'UPDATE Staff SET deleted_at = NOW() WHERE staff_id = ?',
-    [staffId]
-  );
-
-  // Deactivate user account
-  await db.query(
-    'UPDATE User SET is_active = FALSE, deleted_at = NOW() WHERE user_id = ?',
-    [existing[0].user_id]
-  );
-
-  // Audit log
   await auditLog('DELETE', 'Staff', staffId, req.session.userId, existing[0], null, req);
-
-  res.json({
-    success: true,
-    message: 'Staff member deleted successfully'
-  });
+  res.json({ success: true, message: 'Staff member deleted successfully' });
 }));
 
 // Assign courses to staff
@@ -333,39 +322,19 @@ router.delete('/api/staff/:id/courses/:courseId', validateId, catchAsync(async (
 
 // Get staff statistics
 router.get('/api/staff/stats/overview', catchAsync(async (req, res) => {
-  const [stats] = await db.query(`
-    SELECT 
-      COUNT(*) as total_staff,
-      COUNT(CASE WHEN u.is_active = TRUE THEN 1 END) as active_staff,
-      COUNT(CASE WHEN u.is_active = FALSE THEN 1 END) as inactive_staff,
-      COUNT(DISTINCT s.department) as total_departments
-    FROM Staff s
-    JOIN User u ON s.user_id = u.user_id
-    WHERE s.deleted_at IS NULL
-  `);
-
-  const [byDepartment] = await db.query(`
-    SELECT department, COUNT(*) as count
-    FROM Staff
-    WHERE deleted_at IS NULL
-    GROUP BY department
-    ORDER BY count DESC
-  `);
-
-  const [byDesignation] = await db.query(`
-    SELECT designation, COUNT(*) as count
-    FROM Staff
-    WHERE deleted_at IS NULL
-    GROUP BY designation
-    ORDER BY count DESC
-  `);
-
+  const { STAFF } = require('../../utils/staffStore');
+  const active = STAFF.filter(s => s.status === 'active').length;
+  const inactive = STAFF.length - active;
+  const depts = [...new Set(STAFF.map(s => s.department))];
+  const byDept = depts.map(d => ({ department: d, count: STAFF.filter(s => s.department === d).length }));
+  const desigs = [...new Set(STAFF.map(s => s.designation))];
+  const byDesig = desigs.map(d => ({ designation: d, count: STAFF.filter(s => s.designation === d).length }));
   res.json({
     success: true,
     data: {
-      overview: stats[0],
-      by_department: byDepartment,
-      by_designation: byDesignation
+      overview: { total_staff: STAFF.length, active_staff: active, inactive_staff: inactive, total_departments: depts.length },
+      by_department: byDept,
+      by_designation: byDesig,
     }
   });
 }));

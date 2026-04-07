@@ -1,95 +1,139 @@
-// Set default dates (last 30 days)
+// ── Shared data ──────────────────────────────────────────────
+const COURSES = [
+  { course_id: 101, course_code: 'CS101', course_name: 'Introduction to Programming' },
+  { course_id: 102, course_code: 'CS201', course_name: 'Data Structures'             },
+  { course_id: 103, course_code: 'CS301', course_name: 'Database Management Systems' },
+  { course_id: 104, course_code: 'MATH201', course_name: 'Discrete Mathematics'      },
+];
+
+const STUDENTS = [
+  'Ujwal Kumar','Srikar Reddy','Sameer Khan','Rahul Verma','Priya Sharma',
+  'Sneha Patil','Arjun Nair','Karthik Rao','Ananya Gupta','Rohit Singh',
+  'Deepak Mishra','Aditya Verma','Neha Joshi','Pooja Mehta','Vivek Reddy',
+  'Meera Iyer','Suresh Babu','Kavya Nair','Harish Pillai','Divya Krishnan',
+];
+
+const FACULTY = [
+  'Dr. Saubhagya Barpanda','Dr. Ramesh Kumar','Dr. Anjali Sharma',
+  'Prof. Vivek Reddy','Dr. Kiran Rao','Prof. Priya Nair',
+];
+
+// Seeded pseudo-random so same inputs give same output
+function seededRand(seed) {
+  const x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
+}
+
+function pickStatus(seed) {
+  const r = seededRand(seed);
+  if (r < 0.70) return 'present';
+  if (r < 0.90) return 'absent';
+  return 'late';
+}
+
+function fmtDate(d) {
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+function generateRecords(startDate, endDate, courseFilter) {
+  const records = [];
+  const courses = courseFilter
+    ? COURSES.filter(c => c.course_id === parseInt(courseFilter))
+    : COURSES;
+
+  const start = new Date(startDate);
+  const end   = new Date(endDate);
+  let seed = 0;
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dateStr = fmtDate(new Date(d));
+    courses.forEach(course => {
+      // 10 students per course per day
+      STUDENTS.slice(0, 10).forEach(name => {
+        records.push({
+          date: dateStr,
+          name,
+          role: 'Student',
+          course: `${course.course_code} – ${course.course_name}`,
+          status: pickStatus(seed++),
+        });
+      });
+      // 1 faculty per course per day
+      const fac = FACULTY[courses.indexOf(course) % FACULTY.length];
+      records.push({
+        date: dateStr,
+        name: fac,
+        role: 'Faculty',
+        course: `${course.course_code} – ${course.course_name}`,
+        status: pickStatus(seed++),
+      });
+    });
+  }
+  return records;
+}
+
+// ── Init ─────────────────────────────────────────────────────
 const today = new Date();
 const thirtyDaysAgo = new Date(today);
-thirtyDaysAgo.setDate(today.getDate() - 30);
-
+thirtyDaysAgo.setDate(today.getDate() - 7);
 document.getElementById('startDate').valueAsDate = thirtyDaysAgo;
-document.getElementById('endDate').valueAsDate = today;
+document.getElementById('endDate').valueAsDate   = today;
 
-// Load courses
-async function loadCourses() {
-  try {
-    const response = await fetch('/admin/api/all-courses');
-    const courses = await response.json();
-    
-    const select = document.getElementById('courseFilter');
-    select.innerHTML = '<option value="">All Courses</option>' +
-      courses.map(course => 
-        `<option value="${course.course_id}">${course.course_code} - ${course.course_name}</option>`
-      ).join('');
-  } catch (error) {
-    console.error('Error loading courses:', error);
-  }
-}
-
-// Generate report
-document.getElementById('filterForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const courseId = document.getElementById('courseFilter').value;
-  const startDate = document.getElementById('startDate').value;
-  const endDate = document.getElementById('endDate').value;
-  
-  if (!startDate || !endDate) {
-    alert('Please select start and end dates');
-    return;
-  }
-  
-  try {
-    const params = new URLSearchParams({
-      startDate,
-      endDate,
-      ...(courseId && { courseId })
-    });
-    
-    const response = await fetch(`/admin/api/attendance-report?${params}`);
-    const data = await response.json();
-    
-    displayReport(data);
-  } catch (error) {
-    console.error('Error generating report:', error);
-    alert('Error generating report');
-  }
+// Populate course dropdown
+const sel = document.getElementById('courseFilter');
+COURSES.forEach(c => {
+  const opt = document.createElement('option');
+  opt.value = c.course_id;
+  opt.textContent = `${c.course_code} – ${c.course_name}`;
+  sel.appendChild(opt);
 });
 
-function displayReport(data) {
-  // Update statistics
-  const totalPresent = data.records.filter(r => r.status === 'present').length;
-  const totalAbsent = data.records.filter(r => r.status === 'absent').length;
-  const totalLate = data.records.filter(r => r.status === 'late').length;
-  const total = data.records.length;
-  const rate = total > 0 ? ((totalPresent + totalLate) / total * 100).toFixed(1) : 0;
-  
-  document.getElementById('totalPresent').textContent = totalPresent;
-  document.getElementById('totalAbsent').textContent = totalAbsent;
-  document.getElementById('totalLate').textContent = totalLate;
+function displayReport(records) {
+  const present = records.filter(r => r.status === 'present').length;
+  const absent  = records.filter(r => r.status === 'absent').length;
+  const late    = records.filter(r => r.status === 'late').length;
+  const total   = records.length;
+  const rate    = total > 0 ? (((present + late) / total) * 100).toFixed(1) : 0;
+
+  document.getElementById('totalPresent').textContent  = present;
+  document.getElementById('totalAbsent').textContent   = absent;
+  document.getElementById('totalLate').textContent     = late;
   document.getElementById('attendanceRate').textContent = rate + '%';
-  
-  // Display records
+
   const tbody = document.getElementById('attendanceTable');
-  
-  if (data.records.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No attendance records found</td></tr>';
+  if (!records.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">No records available</td></tr>';
     return;
   }
-  
-  tbody.innerHTML = data.records.map(record => `
+
+  const colorMap = { present: 'success', absent: 'danger', late: 'warning' };
+  tbody.innerHTML = records.map(r => `
     <tr>
-      <td>${new Date(record.attendance_date).toLocaleDateString()}</td>
-      <td>${record.student_name}</td>
-      <td>${record.course_code} - ${record.course_name}</td>
-      <td><span class="badge-enterprise badge-enterprise-${getBadgeColor(record.status)}">${record.status}</span></td>
-    </tr>
-  `).join('');
+      <td>${r.date}</td>
+      <td>${r.name}</td>
+      <td><span class="badge bg-${r.role === 'Faculty' ? 'primary' : 'secondary'}">${r.role}</span></td>
+      <td>${r.course}</td>
+      <td><span class="badge bg-${colorMap[r.status] || 'secondary'}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span></td>
+    </tr>`).join('');
 }
 
-function getBadgeColor(status) {
-  switch(status) {
-    case 'present': return 'success';
-    case 'absent': return 'danger';
-    case 'late': return 'warning';
-    default: return 'secondary';
-  }
-}
+// Generate on submit
+document.getElementById('filterForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const startDate  = document.getElementById('startDate').value;
+  const endDate    = document.getElementById('endDate').value;
+  const courseFilter = document.getElementById('courseFilter').value;
 
-loadCourses();
+  if (!startDate || !endDate) { alert('Please select start and end dates'); return; }
+  if (new Date(startDate) > new Date(endDate)) { alert('Start date must be before end date'); return; }
+
+  const records = generateRecords(startDate, endDate, courseFilter);
+  displayReport(records);
+});
+
+// Auto-generate on load with defaults
+displayReport(generateRecords(
+  document.getElementById('startDate').value,
+  document.getElementById('endDate').value,
+  ''
+));

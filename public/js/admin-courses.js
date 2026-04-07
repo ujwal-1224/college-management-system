@@ -1,251 +1,167 @@
+// ─── LOCAL DATA ───────────────────────────────────────────────────────────────
+let coursesList = [
+  { course_id:1,  course_code:'CS301', course_name:'Data Structures & Algorithms',  department:'Computer Science',    credits:4, semester:5, staff_name:'Dr. Saubhagya Barpanda', enrolled_students:34, is_active:true,  description:'Core data structures and algorithm design.' },
+  { course_id:2,  course_code:'CS302', course_name:'Operating Systems',             department:'Computer Science',    credits:3, semester:5, staff_name:'Dr. Ramesh Kumar',        enrolled_students:34, is_active:true,  description:'Process management, memory, file systems.' },
+  { course_id:3,  course_code:'CS303', course_name:'Database Management Systems',   department:'Computer Science',    credits:4, semester:5, staff_name:'Dr. Anjali Sharma',       enrolled_students:34, is_active:true,  description:'Relational databases, SQL, normalization.' },
+  { course_id:4,  course_code:'CS304', course_name:'Computer Networks',             department:'Computer Science',    credits:3, semester:5, staff_name:'Prof. Vivek Reddy',       enrolled_students:34, is_active:true,  description:'Network protocols, TCP/IP, routing.' },
+  { course_id:5,  course_code:'CS305', course_name:'Software Engineering',          department:'Computer Science',    credits:3, semester:5, staff_name:'Dr. Kiran Rao',           enrolled_students:34, is_active:true,  description:'SDLC, design patterns, testing.' },
+  { course_id:6,  course_code:'CS306', course_name:'Web Technologies',              department:'Information Technology',credits:2,semester:5, staff_name:'Prof. Priya Nair',        enrolled_students:34, is_active:true,  description:'HTML, CSS, JavaScript, frameworks.' },
+  { course_id:7,  course_code:'EC201', course_name:'Digital Electronics',           department:'Electronics',         credits:4, semester:3, staff_name:'Prof. Vivek Reddy',       enrolled_students:28, is_active:true,  description:'Logic gates, flip-flops, counters.' },
+  { course_id:8,  course_code:'ME101', course_name:'Engineering Mechanics',         department:'Mechanical',          credits:3, semester:1, staff_name:'Dr. Kiran Rao',           enrolled_students:22, is_active:false, description:'Statics, dynamics, kinematics.' },
+];
+let nextCourseId = 9;
 let currentPage = 1;
 let searchTimer = null;
 
-// ─── LOAD ─────────────────────────────────────────────────────────────────────
-async function loadCourses() {
-  const search = document.getElementById('searchInput').value;
-  const department = document.getElementById('deptFilter').value;
-  const semester = document.getElementById('semFilter').value;
-  const limit = document.getElementById('limitSelect').value;
+function getFiltered() {
+  const q    = (document.getElementById('searchInput').value||'').toLowerCase();
+  const dept = document.getElementById('deptFilter').value;
+  const sem  = document.getElementById('semFilter').value;
+  return coursesList.filter(c => {
+    if (q && !c.course_name.toLowerCase().includes(q) && !c.course_code.toLowerCase().includes(q)) return false;
+    if (dept && c.department !== dept) return false;
+    if (sem  && String(c.semester) !== sem) return false;
+    return true;
+  });
+}
 
-  const params = new URLSearchParams({ page: currentPage, limit, search, department, semester });
+function loadCourses() {
+  const filtered = getFiltered();
+  const limit = parseInt(document.getElementById('limitSelect').value)||10;
+  const total = filtered.length, pages = Math.max(1,Math.ceil(total/limit));
+  if (currentPage > pages) currentPage = pages;
+  const slice = filtered.slice((currentPage-1)*limit, currentPage*limit);
+  document.getElementById('resultCount').textContent = `${total} records`;
+  updateStats();
   const tbody = document.getElementById('coursesTableBody');
-  tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> Loading...</td></tr>';
-
-  try {
-    const res = await fetch('/admin/api/courses?' + params);
-    const { data, pagination } = await res.json();
-
-    document.getElementById('resultCount').textContent = `${pagination.total} records`;
-
-    if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No courses found</td></tr>';
-      document.getElementById('paginationContainer').innerHTML = '';
-      return;
-    }
-
-    tbody.innerHTML = data.map(c => `
-      <tr>
-        <td><strong>${c.course_code}</strong></td>
-        <td>${c.course_name}</td>
-        <td>${c.department || '—'}</td>
-        <td>${c.credits}</td>
-        <td>Sem ${c.semester}</td>
-        <td>${c.faculty_name || '—'}</td>
-        <td>${c.enrolled_count || 0}</td>
-        <td>
-          <span class="badge ${c.is_active ? 'bg-success' : 'bg-secondary'}">
-            ${c.is_active ? 'Active' : 'Inactive'}
-          </span>
-        </td>
-        <td>
-          <button class="btn btn-sm btn-outline-primary me-1" onclick="viewCourse(${c.course_id})" title="View"><i class="bi bi-eye"></i></button>
-          <button class="btn btn-sm btn-outline-warning me-1" onclick="editCourse(${c.course_id})" title="Edit"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-outline-danger" onclick="deleteCourse(${c.course_id}, '${c.course_name.replace(/'/g, "\\'")}')" title="Delete"><i class="bi bi-trash"></i></button>
-        </td>
-      </tr>`).join('');
-
-    renderPagination(pagination);
-  } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Error loading courses</td></tr>';
-  }
+  if (!slice.length) { tbody.innerHTML='<tr><td colspan="9" class="text-center py-4 text-muted">No courses found</td></tr>'; document.getElementById('paginationContainer').innerHTML=''; return; }
+  tbody.innerHTML = slice.map(c=>`
+    <tr>
+      <td><strong>${c.course_code}</strong></td>
+      <td>${c.course_name}</td>
+      <td>${c.department||'—'}</td>
+      <td>${c.credits}</td>
+      <td>Sem ${c.semester}</td>
+      <td>${c.staff_name||'—'}</td>
+      <td>${c.enrolled_students||0}</td>
+      <td><span class="badge ${c.is_active?'bg-success':'bg-secondary'}">${c.is_active?'Active':'Inactive'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="viewCourse(${c.course_id})"><i class="bi bi-eye"></i></button>
+        <button class="btn btn-sm btn-outline-warning me-1" onclick="editCourse(${c.course_id})"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteCourse(${c.course_id})"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>`).join('');
+  renderPagination(currentPage, pages, total);
 }
 
-async function loadStats() {
-  try {
-    const res = await fetch('/admin/api/courses/stats/overview');
-    const { data } = await res.json();
-    document.getElementById('totalCourses').textContent = data.overview.total_courses;
-    document.getElementById('activeCourses').textContent = data.overview.active_courses;
-    document.getElementById('totalDepts').textContent = data.overview.total_departments;
-    document.getElementById('totalEnrollments').textContent = data.overview.total_enrollments;
-  } catch (e) {}
+function updateStats() {
+  const active = coursesList.filter(c=>c.is_active).length;
+  const enroll = coursesList.reduce((s,c)=>s+(c.enrolled_students||0),0);
+  document.getElementById('totalCourses').textContent     = coursesList.length;
+  document.getElementById('activeCourses').textContent    = active;
+  document.getElementById('totalDepts').textContent       = new Set(coursesList.map(c=>c.department)).size;
+  document.getElementById('totalEnrollments').textContent = enroll;
+}
+function loadStats() { updateStats(); }
+
+function renderPagination(page, pages, total) {
+  const c=document.getElementById('paginationContainer');
+  if(pages<=1){c.innerHTML='';return;}
+  let h=`<small class="text-muted">Page ${page} of ${pages} (${total} total)</small><nav><ul class="pagination pagination-sm mb-0">`;
+  h+=`<li class="page-item ${page===1?'disabled':''}"><a class="page-link" href="#" onclick="return goPage(${page-1})">‹</a></li>`;
+  for(let i=1;i<=pages;i++) h+=`<li class="page-item ${i===page?'active':''}"><a class="page-link" href="#" onclick="return goPage(${i})">${i}</a></li>`;
+  h+=`<li class="page-item ${page===pages?'disabled':''}"><a class="page-link" href="#" onclick="return goPage(${page+1})">›</a></li></ul></nav>`;
+  c.innerHTML=h;
+}
+function goPage(p){currentPage=p;loadCourses();return false;}
+function debounceSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(()=>{currentPage=1;loadCourses();},300);}
+function resetFilters(){document.getElementById('searchInput').value='';document.getElementById('deptFilter').value='';document.getElementById('semFilter').value='';currentPage=1;loadCourses();}
+
+function viewCourse(id) {
+  const c=coursesList.find(x=>x.course_id===id); if(!c) return;
+  document.getElementById('viewCourseModalBody').innerHTML=`
+    <div class="row g-3">
+      <div class="col-md-6">
+        <p><strong>Course Code:</strong> ${c.course_code}</p>
+        <p><strong>Course Name:</strong> ${c.course_name}</p>
+        <p><strong>Department:</strong> ${c.department||'—'}</p>
+        <p><strong>Credits:</strong> ${c.credits}</p>
+        <p><strong>Semester:</strong> ${c.semester}</p>
+      </div>
+      <div class="col-md-6">
+        <p><strong>Faculty:</strong> ${c.staff_name||'—'}</p>
+        <p><strong>Enrolled Students:</strong> ${c.enrolled_students||0}</p>
+        <p><strong>Status:</strong> <span class="badge ${c.is_active?'bg-success':'bg-secondary'}">${c.is_active?'Active':'Inactive'}</span></p>
+        ${c.description?`<p><strong>Description:</strong> ${c.description}</p>`:''}
+      </div>
+    </div>`;
+  new bootstrap.Modal(document.getElementById('viewCourseModal')).show();
 }
 
-async function loadStaffList() {
-  try {
-    const res = await fetch('/admin/api/staff?limit=100');
-    const { data } = await res.json();
-    const selects = document.querySelectorAll('#staffId');
-    selects.forEach(sel => {
-      const current = sel.value;
-      sel.innerHTML = '<option value="">Select Faculty (optional)</option>';
-      (data || []).forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.staff_id;
-        opt.textContent = `${s.first_name} ${s.last_name} (${s.department || 'N/A'})`;
-        sel.appendChild(opt);
-      });
-      if (current) sel.value = current;
-    });
-  } catch (e) {}
-}
-
-function renderPagination({ page, pages, total }) {
-  const container = document.getElementById('paginationContainer');
-  if (pages <= 1) { container.innerHTML = ''; return; }
-
-  let html = `<small class="text-muted">Page ${page} of ${pages} (${total} total)</small><nav><ul class="pagination pagination-sm mb-0">`;
-  html += `<li class="page-item ${page === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="goPage(${page - 1})">‹</a></li>`;
-
-  const start = Math.max(1, page - 2), end = Math.min(pages, page + 2);
-  if (start > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="goPage(1)">1</a></li>${start > 2 ? '<li class="page-item disabled"><span class="page-link">…</span></li>' : ''}`;
-  for (let i = start; i <= end; i++) html += `<li class="page-item ${i === page ? 'active' : ''}"><a class="page-link" href="#" onclick="goPage(${i})">${i}</a></li>`;
-  if (end < pages) html += `${end < pages - 1 ? '<li class="page-item disabled"><span class="page-link">…</span></li>' : ''}<li class="page-item"><a class="page-link" href="#" onclick="goPage(${pages})">${pages}</a></li>`;
-
-  html += `<li class="page-item ${page === pages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="goPage(${page + 1})">›</a></li></ul></nav>`;
-  container.innerHTML = html;
-}
-
-function goPage(p) { currentPage = p; loadCourses(); return false; }
-
-function debounceSearch() {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { currentPage = 1; loadCourses(); }, 400);
-}
-
-function resetFilters() {
-  document.getElementById('searchInput').value = '';
-  document.getElementById('deptFilter').value = '';
-  document.getElementById('semFilter').value = '';
-  currentPage = 1;
-  loadCourses();
-}
-
-// ─── VIEW ─────────────────────────────────────────────────────────────────────
-async function viewCourse(id) {
-  const modal = new bootstrap.Modal(document.getElementById('viewCourseModal'));
-  document.getElementById('viewCourseModalBody').innerHTML = '<div class="text-center py-4"><div class="spinner-border"></div></div>';
-  modal.show();
-
-  try {
-    const res = await fetch('/admin/api/courses/' + id);
-    const { data } = await res.json();
-    document.getElementById('viewCourseModalBody').innerHTML = `
-      <div class="row g-3">
-        <div class="col-md-6">
-          <p><strong>Course Code:</strong> ${data.course_code}</p>
-          <p><strong>Course Name:</strong> ${data.course_name}</p>
-          <p><strong>Department:</strong> ${data.department || '—'}</p>
-          <p><strong>Credits:</strong> ${data.credits}</p>
-          <p><strong>Semester:</strong> ${data.semester}</p>
-        </div>
-        <div class="col-md-6">
-          <p><strong>Faculty:</strong> ${data.faculty_name || '—'}</p>
-          <p><strong>Enrolled:</strong> ${data.enrolled_count || 0}</p>
-          <p><strong>Status:</strong> <span class="badge ${data.is_active ? 'bg-success' : 'bg-secondary'}">${data.is_active ? 'Active' : 'Inactive'}</span></p>
-        </div>
-        ${data.description ? `<div class="col-12"><p><strong>Description:</strong> ${data.description}</p></div>` : ''}
-      </div>`;
-  } catch (e) {
-    document.getElementById('viewCourseModalBody').innerHTML = '<p class="text-danger">Error loading course details</p>';
-  }
-}
-
-// ─── ADD / EDIT ───────────────────────────────────────────────────────────────
 function openAddModal() {
-  document.getElementById('modalTitle').textContent = 'Add Course';
+  document.getElementById('modalTitle').textContent='Add Course';
   document.getElementById('courseForm').reset();
-  document.getElementById('courseId').value = '';
-  document.getElementById('courseCode').disabled = false;
+  document.getElementById('courseId').value='';
+  document.getElementById('courseCode').disabled=false;
   document.getElementById('formError').classList.add('d-none');
-  loadStaffList();
   new bootstrap.Modal(document.getElementById('courseModal')).show();
 }
 
-async function editCourse(id) {
-  try {
-    const res = await fetch('/admin/api/courses/' + id);
-    const { data } = await res.json();
-
-    document.getElementById('modalTitle').textContent = 'Edit Course';
-    document.getElementById('courseId').value = id;
-    document.getElementById('courseCode').value = data.course_code;
-    document.getElementById('courseCode').disabled = true;
-    document.getElementById('courseName').value = data.course_name;
-    document.getElementById('department').value = data.department || '';
-    document.getElementById('credits').value = data.credits;
-    document.getElementById('semester').value = data.semester;
-    document.getElementById('description').value = data.description || '';
-    document.getElementById('formError').classList.add('d-none');
-
-    await loadStaffList();
-    document.getElementById('staffId').value = data.staff_id || '';
-
-    new bootstrap.Modal(document.getElementById('courseModal')).show();
-  } catch (e) {
-    showToast('Error loading course data', 'error');
-  }
+function editCourse(id) {
+  const c=coursesList.find(x=>x.course_id===id); if(!c) return;
+  document.getElementById('modalTitle').textContent='Edit Course';
+  document.getElementById('courseId').value=id;
+  document.getElementById('courseCode').value=c.course_code;
+  document.getElementById('courseCode').disabled=true;
+  document.getElementById('courseName').value=c.course_name;
+  document.getElementById('department').value=c.department||'';
+  document.getElementById('credits').value=c.credits;
+  document.getElementById('semester').value=c.semester;
+  document.getElementById('description').value=c.description||'';
+  document.getElementById('formError').classList.add('d-none');
+  new bootstrap.Modal(document.getElementById('courseModal')).show();
 }
 
-async function saveCourse() {
-  const id = document.getElementById('courseId').value;
-  const isEdit = !!id;
-  const btn = document.getElementById('saveBtn');
-  const errDiv = document.getElementById('formError');
+function saveCourse() {
+  const id=document.getElementById('courseId').value;
+  const code=document.getElementById('courseCode').value.trim();
+  const name=document.getElementById('courseName').value.trim();
+  const dept=document.getElementById('department').value;
+  const credits=parseInt(document.getElementById('credits').value)||0;
+  const sem=parseInt(document.getElementById('semester').value)||0;
+  const errDiv=document.getElementById('formError');
+  if(!code||!name||!dept||!credits||!sem){errDiv.textContent='Please fill all required fields.';errDiv.classList.remove('d-none');return;}
   errDiv.classList.add('d-none');
-
-  const payload = {
-    course_code: document.getElementById('courseCode').value,
-    course_name: document.getElementById('courseName').value,
-    department: document.getElementById('department').value,
-    credits: parseInt(document.getElementById('credits').value),
-    semester: parseInt(document.getElementById('semester').value),
-    description: document.getElementById('description').value,
-    staff_id: document.getElementById('staffId').value || null
-  };
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-
-  try {
-    const url = isEdit ? '/admin/api/courses/' + id : '/admin/api/courses';
-    const method = isEdit ? 'PUT' : 'POST';
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      const msg = data.errors ? data.errors.map(e => e.message).join(', ') : (data.message || 'Error saving course');
-      errDiv.textContent = msg;
-      errDiv.classList.remove('d-none');
-      return;
-    }
-
-    bootstrap.Modal.getInstance(document.getElementById('courseModal')).hide();
-    showToast(isEdit ? 'Course updated successfully' : 'Course created successfully', 'success');
-    loadCourses();
-    loadStats();
-  } catch (e) {
-    errDiv.textContent = 'Network error. Please try again.';
-    errDiv.classList.remove('d-none');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = 'Save Course';
+  if(id){
+    const c=coursesList.find(x=>x.course_id===parseInt(id));
+    if(c){c.course_name=name;c.department=dept;c.credits=credits;c.semester=sem;c.description=document.getElementById('description').value.trim();}
+    showToast('Course updated successfully','success');
+  } else {
+    coursesList.unshift({course_id:nextCourseId++,course_code:code,course_name:name,department:dept,credits,semester:sem,staff_name:'—',enrolled_students:0,is_active:true,description:document.getElementById('description').value.trim()});
+    showToast('Course added successfully','success');
   }
+  bootstrap.Modal.getInstance(document.getElementById('courseModal')).hide();
+  loadCourses();
 }
 
-// ─── DELETE ───────────────────────────────────────────────────────────────────
-async function deleteCourse(id, name) {
-  if (!confirm(`Delete course "${name}"?\n\nThis action cannot be undone.`)) return;
-
-  try {
-    const res = await fetch('/admin/api/courses/' + id, { method: 'DELETE' });
-    const data = await res.json();
-    if (data.success) { showToast('Course deleted successfully', 'success'); loadCourses(); loadStats(); }
-    else showToast(data.message || 'Error deleting course', 'error');
-  } catch (e) { showToast('Network error', 'error'); }
+function deleteCourse(id) {
+  const c=coursesList.find(x=>x.course_id===id); if(!c) return;
+  showConfirm(`Delete course "${c.course_name}"?`,()=>{coursesList=coursesList.filter(x=>x.course_id!==id);loadCourses();showToast('Course deleted successfully','success');});
 }
 
-// ─── TOAST ────────────────────────────────────────────────────────────────────
-function showToast(message, type = 'success') {
-  const toast = document.createElement('div');
-  toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
-  toast.style.cssText = 'top:20px;right:20px;z-index:9999;min-width:300px;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
-  toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'x-circle'} me-2"></i>${message}`;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3500);
+function showConfirm(msg,onYes){
+  const el=document.createElement('div');
+  el.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;display:flex;align-items:center;justify-content:center;"><div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);"><div style="font-size:2rem;text-align:center;margin-bottom:12px;">⚠️</div><p style="text-align:center;color:#374151;margin-bottom:20px;">${msg}</p><div style="display:flex;gap:10px;justify-content:center;"><button id="_cy" class="btn btn-danger px-4">Yes, Delete</button><button id="_cn" class="btn btn-outline-secondary px-4">Cancel</button></div></div></div>`;
+  document.body.appendChild(el);
+  el.querySelector('#_cy').onclick=()=>{el.remove();onYes();};
+  el.querySelector('#_cn').onclick=()=>el.remove();
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+function showToast(msg,type='success'){
+  const t=document.createElement('div');t.className=`alert alert-${type==='success'?'success':'danger'} position-fixed`;
+  t.style.cssText='top:20px;right:20px;z-index:9999;min-width:280px;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+  t.innerHTML=`<i class="bi bi-${type==='success'?'check-circle':'x-circle'} me-2"></i>${msg}`;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+}
+
 loadCourses();
-loadStats();

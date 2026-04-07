@@ -1,4 +1,3 @@
-console.log("🔥 ADMIN ROUTES FILE LOADED");
 const express = require('express');
 const router = express.Router();
 const path = require('path');
@@ -8,8 +7,8 @@ const { catchAsync } = require('../middleware/errorHandler');
 const db = require('../config/database');
 
 // 🔐 Apply auth to all admin routes
-// router.use(isAuthenticated);
-// router.use(isRole('admin'));
+router.use(isAuthenticated);
+router.use(isRole('admin'));
 
 // ─── PAGE ROUTES (FIXED PATHS) ───────────────────────────────────────────────
 router.get('/dashboard', (req, res) =>
@@ -62,25 +61,55 @@ router.get('/results-reports', (req, res) =>
 router.get('/api/stats', catchAsync(async (req, res) => {
   const [[students]] = await db.query('SELECT COUNT(*) as count FROM Student');
   const [[courses]]  = await db.query('SELECT COUNT(*) as count FROM Course');
-  let staff = 0;
-  try { [[{ count: staff }]] = await db.query('SELECT COUNT(*) as count FROM Faculty'); } catch(e) {}
-  res.json({ students: students.count, staff, courses: courses.count });
-}));
-  const [[courses]]  = await db.query('SELECT COUNT(*) as count FROM Course WHERE deleted_at IS NULL');
+  const [[staff]]    = await db.query('SELECT COUNT(*) as count FROM Staff');
+  const [[parents]]  = await db.query('SELECT COUNT(*) as count FROM Parent');
 
   res.json({
     students: students.count,
-    staff: staff.count,
-    courses: courses.count
+    staff:    staff.count,
+    courses:  courses.count,
+    parents:  parents.count,
+    faculty:  staff.count  // alias for legacy admin.js
   });
 }));
 
-// Courses
+// Courses (simple list for dropdowns — only relevant courses)
 router.get('/api/all-courses', catchAsync(async (req, res) => {
-  const [courses] = await db.query(
-    'SELECT course_id, course_code, course_name FROM Course ORDER BY course_code'
-  );
-  res.json(courses);
+  res.json({
+    success: true,
+    data: [
+      { course_id: 101, course_code: 'CS101',   course_name: 'Introduction to Programming' },
+      { course_id: 102, course_code: 'CS201',   course_name: 'Data Structures'             },
+      { course_id: 103, course_code: 'CS301',   course_name: 'Database Management Systems' },
+      { course_id: 104, course_code: 'MATH201', course_name: 'Discrete Mathematics'        },
+    ]
+  });
+}));
+
+// Exams stats overview
+router.get('/api/exams/stats/overview', catchAsync(async (req, res) => {
+  const [[total]]     = await db.query('SELECT COUNT(*) as count FROM Exam');
+  const [[thisMonth]] = await db.query("SELECT COUNT(*) as count FROM Exam WHERE MONTH(exam_date)=MONTH(NOW()) AND YEAR(exam_date)=YEAR(NOW())");
+
+  let published = 0, pending = 0;
+  try {
+    const [[pub]] = await db.query('SELECT COUNT(*) as count FROM Result WHERE is_published=1');
+    published = pub.count;
+    const [[pend]] = await db.query('SELECT COUNT(*) as count FROM Result WHERE is_published=0 OR is_published IS NULL');
+    pending = pend.count;
+  } catch(e) {}
+
+  res.json({
+    success: true,
+    data: {
+      overview: {
+        total_exams: total.count,
+        this_month: thisMonth.count,
+        published_results: published,
+        pending_results: pending
+      }
+    }
+  });
 }));
 
 // Exams

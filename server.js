@@ -42,6 +42,7 @@ app.use(session({
 app.use('/',        require('./routes/auth'));
 app.use('/student', require('./routes/student'));
 app.use('/staff',   require('./routes/staff'));
+app.use('/faculty', require('./routes/faculty'));
 app.use('/parent',  require('./routes/parent'));
 app.use('/admin',   require('./routes/admin'));
 
@@ -51,8 +52,16 @@ app.get('/', (req, res) => {
   res.sendFile('index.html', { root: './views' });
 });
 
+// 404 handler
+app.use((req, res) => {
+  if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+    return res.status(404).json({ success: false, message: 'Route not found' });
+  }
+  res.status(404).redirect('/login');
+});
+
 // Global error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const status = err.statusCode || 500;
   const message = err.isOperational ? err.message : 'Something went wrong. Please try again.';
   console.error('[ERROR]', err.message);

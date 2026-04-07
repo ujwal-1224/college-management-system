@@ -49,9 +49,13 @@ document.getElementById('courseSelect').addEventListener('change', async (e) => 
     }
     
     examSelect.innerHTML = '<option value="">Select an exam</option>' +
-      exams.map(exam => 
-        `<option value="${exam.exam_id}" data-max-marks="${exam.max_marks}">${exam.exam_name} (${new Date(exam.exam_date).toLocaleDateString()}) - ${exam.max_marks} marks</option>`
-      ).join('');
+      exams.map(exam => {
+        const d = new Date(exam.exam_date);
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yyyy = d.getFullYear();
+        return `<option value="${exam.exam_id}" data-max-marks="${exam.max_marks}">${exam.exam_name} (${dd}/${mm}/${yyyy}) – ${exam.max_marks} marks</option>`;
+      }).join('');
   } catch (error) {
     console.error('Error loading exams:', error);
   }
@@ -111,21 +115,23 @@ async function loadStudentsForGrading(examId) {
           <td>${student.first_name} ${student.last_name}</td>
           <td>${student.email}</td>
           <td>
-            <input type="number" 
-                   class="form-control form-control-sm marks-input" 
+            <input type="number"
+                   class="form-control form-control-sm marks-input"
                    data-student-id="${student.student_id}"
-                   min="0" 
-                   max="${currentMaxMarks}" 
+                   min="0"
+                   max="${currentMaxMarks}"
                    value="${marks}"
-                   placeholder="0-${currentMaxMarks}">
+                   placeholder="0–${currentMaxMarks}">
+            <small class="text-muted">Enter marks (0–${currentMaxMarks})</small>
           </td>
           <td>
-            <input type="text" 
-                   class="form-control form-control-sm grade-input" 
+            <input type="text"
+                   class="form-control form-control-sm grade-input"
                    data-student-id="${student.student_id}"
                    value="${grade}"
                    placeholder="A, B, C..."
-                   maxlength="2">
+                   maxlength="2"
+                   readonly>
           </td>
         </tr>
       `;
@@ -133,12 +139,25 @@ async function loadStudentsForGrading(examId) {
     
     document.getElementById('gradesCard').style.display = 'block';
     
-    // Add auto-grade calculation
+    // Add auto-grade calculation with validation
     document.querySelectorAll('.marks-input').forEach(input => {
       input.addEventListener('input', (e) => {
-        const marks = parseInt(e.target.value) || 0;
+        let marks = parseInt(e.target.value);
+        if (isNaN(marks)) return;
+        // Auto-correct out-of-range values
+        if (marks < 0) { marks = 0; e.target.value = 0; }
+        if (marks > currentMaxMarks) { marks = currentMaxMarks; e.target.value = currentMaxMarks; }
         const gradeInput = e.target.closest('tr').querySelector('.grade-input');
         gradeInput.value = calculateGrade(marks, currentMaxMarks);
+        // Visual feedback
+        e.target.classList.toggle('is-invalid', false);
+      });
+      input.addEventListener('blur', (e) => {
+        const marks = parseInt(e.target.value);
+        if (!isNaN(marks) && (marks < 0 || marks > currentMaxMarks)) {
+          e.target.classList.add('is-invalid');
+          showAlert(`Marks must be between 0 and ${currentMaxMarks}`, 'danger');
+        }
       });
     });
     
@@ -178,7 +197,7 @@ document.getElementById('gradesForm').addEventListener('submit', async (e) => {
       const grade = gradeInput.value.trim();
       
       if (marks > currentMaxMarks) {
-        alert(`Marks for student ${studentId} exceed maximum marks (${currentMaxMarks})`);
+        showAlert(`Marks for student ${studentId} exceed maximum (${currentMaxMarks}). Please correct before saving.`, 'danger');
         return;
       }
       

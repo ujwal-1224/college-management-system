@@ -11,6 +11,12 @@ router.get('/api/students', catchAsync(async (req, res) => {
   const { page = 1, limit = 10, search = '', department = '', semester = '' } = req.query;
   const { limit: qLimit, offset } = paginate(page, limit);
 
+  // Detect available columns
+  const [uCols] = await db.query('SHOW COLUMNS FROM User');
+  const uColNames = uCols.map(c => c.Field);
+  const hasIsActive = uColNames.includes('is_active');
+  const isActiveSelect = hasIsActive ? ', u.is_active' : '';
+
   let where = 'WHERE 1=1';
   const params = [];
 
@@ -27,7 +33,7 @@ router.get('/api/students', catchAsync(async (req, res) => {
   );
 
   const [students] = await db.query(
-    `SELECT s.*, u.username, u.is_active, u.last_login
+    `SELECT s.*, u.username ${isActiveSelect}
      FROM Student s JOIN User u ON s.user_id = u.user_id
      ${where} ORDER BY s.student_id DESC LIMIT ? OFFSET ?`,
     [...params, qLimit, offset]
@@ -42,13 +48,27 @@ router.get('/api/students', catchAsync(async (req, res) => {
 
 // ── GET STATS ─────────────────────────────────────────────────
 router.get('/api/students/stats/overview', catchAsync(async (req, res) => {
-  const [[stats]] = await db.query(`
-    SELECT COUNT(*) as total_students,
-           COUNT(CASE WHEN u.is_active=1 THEN 1 END) as active_students,
-           COUNT(CASE WHEN u.is_active=0 THEN 1 END) as inactive_students,
-           COUNT(DISTINCT s.department) as total_departments
-    FROM Student s JOIN User u ON s.user_id = u.user_id`);
+  const [uCols] = await db.query('SHOW COLUMNS FROM User');
+  const hasIsActive = uCols.map(c => c.Field).includes('is_active');
 
+  let statsQuery;
+  if (hasIsActive) {
+    statsQuery = `
+      SELECT COUNT(*) as total_students,
+             COUNT(CASE WHEN u.is_active=1 THEN 1 END) as active_students,
+             COUNT(CASE WHEN u.is_active=0 THEN 1 END) as inactive_students,
+             COUNT(DISTINCT s.department) as total_departments
+      FROM Student s JOIN User u ON s.user_id = u.user_id`;
+  } else {
+    statsQuery = `
+      SELECT COUNT(*) as total_students,
+             COUNT(*) as active_students,
+             0 as inactive_students,
+             COUNT(DISTINCT s.department) as total_departments
+      FROM Student s JOIN User u ON s.user_id = u.user_id`;
+  }
+
+  const [[stats]] = await db.query(statsQuery);
   const [byDept] = await db.query(
     'SELECT department, COUNT(*) as count FROM Student GROUP BY department ORDER BY count DESC');
   const [bySem] = await db.query(

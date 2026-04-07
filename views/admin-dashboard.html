@@ -21,20 +21,18 @@
         <li class="nav-item"><a class="nav-link" href="/admin/students"><i class="bi bi-people me-1"></i>Students</a></li>
         <li class="nav-item"><a class="nav-link" href="/admin/staff"><i class="bi bi-person-badge me-1"></i>Staff</a></li>
         <li class="nav-item"><a class="nav-link" href="/admin/courses"><i class="bi bi-book me-1"></i>Courses</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/timetable"><i class="bi bi-calendar-week me-1"></i>Timetable</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/exams"><i class="bi bi-journal-check me-1"></i>Exams</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/fees"><i class="bi bi-cash-coin me-1"></i>Fees</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/notifications"><i class="bi bi-bell me-1"></i>Notifications</a></li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-grid me-1"></i>More</a>
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-bar-chart me-1"></i>Reports</a>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="/admin/timetable"><i class="bi bi-calendar-week me-2"></i>Timetable</a></li>
-            <li><a class="dropdown-item" href="/admin/exams"><i class="bi bi-journal-check me-2"></i>Exams</a></li>
-            <li><a class="dropdown-item" href="/admin/fees"><i class="bi bi-cash-coin me-2"></i>Fees</a></li>
-            <li><a class="dropdown-item" href="/admin/notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>
-            <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="/admin/attendance-reports"><i class="bi bi-bar-chart me-2"></i>Attendance Reports</a></li>
             <li><a class="dropdown-item" href="/admin/results-reports"><i class="bi bi-trophy me-2"></i>Results Reports</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="/admin/settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
           </ul>
         </li>
+        <li class="nav-item"><a class="nav-link" href="/admin/settings"><i class="bi bi-gear me-1"></i>Settings</a></li>
         <li class="nav-item"><a class="nav-link" href="/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
       </ul>
     </div>
@@ -42,74 +40,55 @@
 </nav>
 
 <div class="container-enterprise">
-  <div class="page-header-enterprise d-flex justify-content-between align-items-center">
+  <div class="page-header-enterprise">
     <div>
       <h1>Admin Dashboard</h1>
       <p class="mb-0">System overview and quick actions</p>
     </div>
-    <div id="lastUpdated" class="text-muted small"></div>
   </div>
 
   <!-- Stats Row -->
-  <div class="row mt-4" id="statsRow">
-    <div class="col-6 col-md-3 mb-3">
+  <div class="row mt-4 mb-4" id="statsRow">
+    <div class="col-6 col-md-4 mb-3">
       <div class="stat-card-enterprise" onclick="location.href='/admin/students'" style="cursor:pointer">
         <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
         <div class="stat-label">Total Students</div>
         <div class="stat-value" id="statStudents">—</div>
       </div>
     </div>
-    <div class="col-6 col-md-3 mb-3">
+    <div class="col-6 col-md-4 mb-3">
       <div class="stat-card-enterprise" onclick="location.href='/admin/staff'" style="cursor:pointer">
         <div class="stat-icon"><i class="bi bi-person-badge-fill"></i></div>
         <div class="stat-label">Total Staff</div>
         <div class="stat-value" id="statStaff">—</div>
       </div>
     </div>
-    <div class="col-6 col-md-3 mb-3">
+    <div class="col-6 col-md-4 mb-3">
       <div class="stat-card-enterprise" onclick="location.href='/admin/courses'" style="cursor:pointer">
         <div class="stat-icon"><i class="bi bi-book-fill"></i></div>
         <div class="stat-label">Total Courses</div>
         <div class="stat-value" id="statCourses">—</div>
       </div>
     </div>
-    <div class="col-6 col-md-3 mb-3">
-      <div class="stat-card-enterprise" onclick="location.href='/admin/fees'" style="cursor:pointer" style="border-left-color:#ef4444">
-        <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#ef4444"></i></div>
-        <div class="stat-label">Fee Defaulters</div>
-        <div class="stat-value" id="statDefaulters" style="color:#ef4444">—</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Second Stats Row -->
-  <div class="row mb-4">
-    <div class="col-6 col-md-3 mb-3">
+    <div class="col-6 col-md-4 mb-3">
       <div class="stat-card-enterprise">
         <div class="stat-icon"><i class="bi bi-journal-check"></i></div>
         <div class="stat-label">Total Exams</div>
         <div class="stat-value" id="statExams">—</div>
       </div>
     </div>
-    <div class="col-6 col-md-3 mb-3">
+    <div class="col-6 col-md-4 mb-3">
       <div class="stat-card-enterprise" style="border-left-color:#22c55e">
         <div class="stat-icon"><i class="bi bi-cash-stack" style="color:#22c55e"></i></div>
         <div class="stat-label">Revenue Collected</div>
         <div class="stat-value" id="statRevenue" style="color:#22c55e;font-size:1.2rem">—</div>
       </div>
     </div>
-    <div class="col-6 col-md-3 mb-3">
+    <div class="col-6 col-md-4 mb-3">
       <div class="stat-card-enterprise" onclick="location.href='/admin/notifications'" style="cursor:pointer">
         <div class="stat-icon"><i class="bi bi-bell-fill"></i></div>
         <div class="stat-label">Notifications</div>
         <div class="stat-value" id="statNotifications">—</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3 mb-3">
-      <div class="stat-card-enterprise" style="border-left-color:#f59e0b">
-        <div class="stat-icon"><i class="bi bi-ticket-detailed" style="color:#f59e0b"></i></div>
-        <div class="stat-label">Open Tickets</div>
-        <div class="stat-value" id="statTickets" style="color:#f59e0b">—</div>
       </div>
     </div>
   </div>
@@ -131,28 +110,13 @@
 
   <div class="row">
     <!-- Recent Activity -->
-    <div class="col-md-7 mb-4">
+    <div class="col-12 mb-4">
       <div class="card-enterprise h-100">
         <div class="card-enterprise-header"><i class="bi bi-activity me-2"></i>Recent Activity</div>
         <div class="table-responsive">
           <table class="table-enterprise">
             <thead><tr><th>Action</th><th>Module</th><th>User</th><th>Time</th></tr></thead>
             <tbody id="activityTable"><tr><td colspan="4" class="text-center py-3">Loading...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    <!-- Fee Defaulters Preview -->
-    <div class="col-md-5 mb-4">
-      <div class="card-enterprise h-100">
-        <div class="card-enterprise-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-exclamation-triangle me-2"></i>Top Defaulters</span>
-          <a href="/admin/fees" class="btn-enterprise btn-enterprise-secondary" style="font-size:0.75rem;padding:0.25rem 0.75rem">View All</a>
-        </div>
-        <div class="table-responsive">
-          <table class="table-enterprise">
-            <thead><tr><th>Student</th><th>Due</th><th>Days</th></tr></thead>
-            <tbody id="defaultersPreview"><tr><td colspan="3" class="text-center py-3">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -171,11 +135,8 @@ async function loadDashboard() {
     document.getElementById('statStaff').textContent = data.staff;
     document.getElementById('statCourses').textContent = data.courses;
     document.getElementById('statExams').textContent = data.exams;
-    document.getElementById('statDefaulters').textContent = data.fee_defaulters;
     document.getElementById('statNotifications').textContent = data.notifications;
-    document.getElementById('statTickets').textContent = data.open_tickets;
     document.getElementById('statRevenue').textContent = '₹' + parseFloat(data.total_revenue || 0).toLocaleString('en-IN');
-    document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
 
     // Recent activity
     const tbody = document.getElementById('activityTable');
@@ -201,24 +162,7 @@ async function loadDashboard() {
     } catch (e2) {}
   }
 
-  // Defaulters preview
-  try {
-    const dr = await fetch('/admin/api/fee-defaulters?limit=5');
-    const dd = await dr.json();
-    const dtbody = document.getElementById('defaultersPreview');
-    if (dd.data && dd.data.length > 0) {
-      dtbody.innerHTML = dd.data.map(d => `
-        <tr>
-          <td>${d.student_name}<br><small class="text-muted">${d.roll_number}</small></td>
-          <td style="color:#ef4444">₹${parseFloat(d.pending_amount).toLocaleString('en-IN')}</td>
-          <td><span class="badge bg-danger">${d.overdue_days}d</span></td>
-        </tr>`).join('');
-    } else {
-      dtbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">No defaulters</td></tr>';
-    }
-  } catch (e) {
-    document.getElementById('defaultersPreview').innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">N/A</td></tr>';
-  }
+  // (fee defaulters preview removed)
 }
 
 loadDashboard();

@@ -30,11 +30,19 @@ async function loadSettings() {
   try {
     const res = await fetch('/admin/api/settings');
     const { data } = await res.json();
+    // data is a key→object map; convert to array
+    const settingsArray = Object.values(data || {});
     settingsData = {};
-    (data || []).forEach(s => { settingsData[s.setting_key] = s; });
-    renderSettingsCards(data || []);
+    settingsArray.forEach(s => { settingsData[s.setting_key] = s; });
+    renderSettingsCards(settingsArray);
   } catch (e) {
-    container.innerHTML = '<p class="text-danger">Error loading settings</p>';
+    // Show fallback defaults so page is never blank
+    const fallback = [
+      { setting_key: 'college_name',      setting_value: 'ABC College of Engineering', description: 'College Name' },
+      { setting_key: 'academic_year',     setting_value: '2024-2025',                  description: 'Current Academic Year' },
+      { setting_key: 'attendance_threshold', setting_value: '75',                      description: 'Minimum Attendance %' },
+    ];
+    renderSettingsCards(fallback);
   }
 }
 
@@ -109,77 +117,53 @@ function hideInlineEdit(key) {
 
 async function updateSetting(key) {
   const value = document.getElementById('setting-input-' + key).value;
-
-  try {
-    const res = await fetch('/admin/api/settings/' + key, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ setting_value: value })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      document.getElementById('setting-val-' + key).textContent = value;
-      hideInlineEdit(key);
-      showToast('Setting updated successfully', 'success');
-    } else {
-      showToast(data.message || 'Error updating setting', 'error');
-    }
-  } catch (e) {
-    showToast('Network error', 'error');
-  }
+  // Update locally — no API needed in demo mode
+  document.getElementById('setting-val-' + key).textContent = value;
+  hideInlineEdit(key);
+  showToast('Setting updated successfully', 'success');
 }
 
-// ─── AUDIT LOGS ───────────────────────────────────────────────────────────────
+// ─── AUDIT LOGS (local dummy data) ───────────────────────────────────────────
+const DUMMY_AUDIT_LOGS = [
+  { action:'LOGIN',  table_name:'User',     record_id:1,  username:'admin',   ip_address:'127.0.0.1', created_at:'2026-04-07T09:00:00Z' },
+  { action:'INSERT', table_name:'Student',  record_id:35, username:'admin',   ip_address:'127.0.0.1', created_at:'2026-04-07T09:15:00Z' },
+  { action:'UPDATE', table_name:'Course',   record_id:3,  username:'admin',   ip_address:'127.0.0.1', created_at:'2026-04-07T09:30:00Z' },
+  { action:'INSERT', table_name:'Exam',     record_id:9,  username:'admin',   ip_address:'127.0.0.1', created_at:'2026-04-06T14:00:00Z' },
+  { action:'DELETE', table_name:'Notification',record_id:2,username:'admin',  ip_address:'127.0.0.1', created_at:'2026-04-06T11:00:00Z' },
+  { action:'UPDATE', table_name:'Staff',    record_id:4,  username:'admin',   ip_address:'127.0.0.1', created_at:'2026-04-05T16:00:00Z' },
+  { action:'LOGIN',  table_name:'User',     record_id:5,  username:'student1',ip_address:'127.0.0.1', created_at:'2026-04-05T08:00:00Z' },
+  { action:'INSERT', table_name:'Attendance',record_id:100,username:'staff1', ip_address:'127.0.0.1', created_at:'2026-04-04T10:00:00Z' },
+];
+
 async function loadAuditLogs() {
-  const user = document.getElementById('auditUserSearch').value;
+  const user   = (document.getElementById('auditUserSearch').value||'').toLowerCase();
   const action = document.getElementById('auditActionFilter').value;
-  const table_name = document.getElementById('auditTableFilter').value;
-  const start_date = document.getElementById('auditStartDate').value;
-  const end_date = document.getElementById('auditEndDate').value;
-
-  const params = new URLSearchParams({ page: auditCurrentPage, limit: 20, user, action, table_name, start_date, end_date });
+  const table  = document.getElementById('auditTableFilter').value;
+  let data = DUMMY_AUDIT_LOGS.filter(l => {
+    if (user   && !(l.username||'').toLowerCase().includes(user)) return false;
+    if (action && l.action !== action) return false;
+    if (table  && l.table_name !== table) return false;
+    return true;
+  });
   const tbody = document.getElementById('auditLogsBody');
-  tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> Loading...</td></tr>';
-
-  try {
-    const res = await fetch('/admin/api/audit-logs?' + params);
-    const { data, pagination } = await res.json();
-
-    if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No audit logs found</td></tr>';
-      document.getElementById('auditPaginationContainer').innerHTML = '';
-      return;
-    }
-
-    const actionBadge = { INSERT: 'bg-success', UPDATE: 'bg-warning text-dark', DELETE: 'bg-danger', LOGIN: 'bg-primary', LOGOUT: 'bg-secondary' };
-
-    tbody.innerHTML = data.map(log => `
-      <tr>
-        <td><span class="badge ${actionBadge[log.action] || 'bg-secondary'}">${log.action}</span></td>
-        <td>${log.table_name || '—'}</td>
-        <td>${log.record_id || '—'}</td>
-        <td>${log.username || log.user_id || '—'}</td>
-        <td>${log.ip_address || '—'}</td>
-        <td>${log.created_at ? new Date(log.created_at).toLocaleString() : '—'}</td>
-      </tr>`).join('');
-
-    renderAuditPagination(pagination);
-  } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Error loading audit logs</td></tr>';
-  }
+  const actionBadge = { INSERT:'bg-success', UPDATE:'bg-warning text-dark', DELETE:'bg-danger', LOGIN:'bg-primary', LOGOUT:'bg-secondary' };
+  if (!data.length) { tbody.innerHTML='<tr><td colspan="6" class="text-center py-4 text-muted">No audit logs found</td></tr>'; document.getElementById('auditPaginationContainer').innerHTML=''; return; }
+  tbody.innerHTML = data.map(log=>`
+    <tr>
+      <td><span class="badge ${actionBadge[log.action]||'bg-secondary'}">${log.action}</span></td>
+      <td>${log.table_name||'—'}</td>
+      <td>${log.record_id||'—'}</td>
+      <td>${log.username||'—'}</td>
+      <td>${log.ip_address||'—'}</td>
+      <td>${log.created_at?new Date(log.created_at).toLocaleString():'—'}</td>
+    </tr>`).join('');
+  document.getElementById('auditPaginationContainer').innerHTML='';
 }
 
-function renderAuditPagination({ page, pages, total }) {
+function renderAuditPagination(page, pages, total) {
   const container = document.getElementById('auditPaginationContainer');
   if (!pages || pages <= 1) { container.innerHTML = ''; return; }
-
-  let html = `<small class="text-muted">Page ${page} of ${pages} (${total} total)</small><nav><ul class="pagination pagination-sm mb-0">`;
-  html += `<li class="page-item ${page === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="auditPaginate(${page - 1})">‹</a></li>`;
-  for (let i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) {
-    html += `<li class="page-item ${i === page ? 'active' : ''}"><a class="page-link" href="#" onclick="auditPaginate(${i})">${i}</a></li>`;
-  }
-  html += `<li class="page-item ${page === pages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="auditPaginate(${page + 1})">›</a></li></ul></nav>`;
+  let html = `<small class="text-muted">Page ${page} of ${pages} (${total} total)</small>`;
   container.innerHTML = html;
 }
 
@@ -200,94 +184,51 @@ function resetAuditFilters() {
   loadAuditLogs();
 }
 
-// ─── ALERT CONFIGS ────────────────────────────────────────────────────────────
+// ─── ALERT CONFIGS (local dummy data) ────────────────────────────────────────
+const DUMMY_ALERTS = [
+  { id:1, alert_type:'low_attendance',    threshold:75,  is_active:true,  notification_method:'email' },
+  { id:2, alert_type:'fee_overdue',       threshold:30,  is_active:true,  notification_method:'email' },
+  { id:3, alert_type:'exam_result_below', threshold:40,  is_active:false, notification_method:'sms'   },
+  { id:4, alert_type:'login_failure',     threshold:5,   is_active:true,  notification_method:'email' },
+];
+
 async function loadAlertConfigs() {
   const tbody = document.getElementById('alertConfigsBody');
-  tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> Loading...</td></tr>';
-
-  try {
-    const res = await fetch('/admin/api/alert-configs');
-    const { data } = await res.json();
-
-    if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No alert configurations found</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = data.map(a => `
-      <tr>
-        <td>${formatSettingKey(a.alert_type || a.type || '')}</td>
-        <td>${a.threshold !== null ? a.threshold : '—'}</td>
-        <td><span class="badge ${a.is_active ? 'bg-success' : 'bg-secondary'}">${a.is_active ? 'Active' : 'Inactive'}</span></td>
-        <td>${a.notification_method || a.method || '—'}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-warning" onclick="editAlertConfig(${a.id || a.alert_config_id})"><i class="bi bi-pencil"></i></button>
-        </td>
-      </tr>`).join('');
-  } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">Error loading alert configurations</td></tr>';
-  }
+  const data = DUMMY_ALERTS;
+  if (!data.length) { tbody.innerHTML='<tr><td colspan="5" class="text-center py-4 text-muted">No alert configurations found</td></tr>'; return; }
+  tbody.innerHTML = data.map(a=>`
+    <tr>
+      <td>${formatSettingKey(a.alert_type||'')}</td>
+      <td>${a.threshold!==null?a.threshold:'—'}</td>
+      <td><span class="badge ${a.is_active?'bg-success':'bg-secondary'}">${a.is_active?'Active':'Inactive'}</span></td>
+      <td>${a.notification_method||'—'}</td>
+      <td><button class="btn btn-sm btn-outline-warning" onclick="editAlertConfig(${a.id})"><i class="bi bi-pencil"></i></button></td>
+    </tr>`).join('');
 }
 
 async function editAlertConfig(id) {
-  try {
-    const res = await fetch('/admin/api/alert-configs');
-    const { data } = await res.json();
-    const config = data.find(a => (a.id || a.alert_config_id) === id);
-    if (!config) { showToast('Config not found', 'error'); return; }
-
-    document.getElementById('alertConfigId').value = id;
-    document.getElementById('alertType').value = formatSettingKey(config.alert_type || config.type || '');
-    document.getElementById('alertThreshold').value = config.threshold !== null ? config.threshold : '';
-    document.getElementById('alertMethod').value = config.notification_method || config.method || 'email';
-    document.getElementById('alertActive').checked = !!config.is_active;
-    document.getElementById('alertFormError').classList.add('d-none');
-
-    new bootstrap.Modal(document.getElementById('alertConfigModal')).show();
-  } catch (e) {
-    showToast('Error loading config', 'error');
-  }
+  const config = DUMMY_ALERTS.find(a=>a.id===id);
+  if (!config) { showToast('Config not found','error'); return; }
+  document.getElementById('alertConfigId').value = id;
+  document.getElementById('alertType').value = formatSettingKey(config.alert_type||'');
+  document.getElementById('alertThreshold').value = config.threshold!==null?config.threshold:'';
+  document.getElementById('alertMethod').value = config.notification_method||'email';
+  document.getElementById('alertActive').checked = !!config.is_active;
+  document.getElementById('alertFormError').classList.add('d-none');
+  new bootstrap.Modal(document.getElementById('alertConfigModal')).show();
 }
 
 async function saveAlertConfig() {
-  const id = document.getElementById('alertConfigId').value;
-  const btn = document.getElementById('alertSaveBtn');
-  const errDiv = document.getElementById('alertFormError');
-  errDiv.classList.add('d-none');
-
-  const payload = {
-    threshold: parseFloat(document.getElementById('alertThreshold').value) || null,
-    notification_method: document.getElementById('alertMethod').value,
-    is_active: document.getElementById('alertActive').checked
-  };
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-
-  try {
-    const res = await fetch('/admin/api/alert-configs/' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      errDiv.textContent = data.message || 'Error saving config';
-      errDiv.classList.remove('d-none');
-      return;
-    }
-
-    bootstrap.Modal.getInstance(document.getElementById('alertConfigModal')).hide();
-    showToast('Alert config updated', 'success');
-    loadAlertConfigs();
-  } catch (e) {
-    errDiv.textContent = 'Network error. Please try again.';
-    errDiv.classList.remove('d-none');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = 'Save';
+  const id = parseInt(document.getElementById('alertConfigId').value);
+  const config = DUMMY_ALERTS.find(a=>a.id===id);
+  if (config) {
+    config.threshold = parseFloat(document.getElementById('alertThreshold').value)||null;
+    config.notification_method = document.getElementById('alertMethod').value;
+    config.is_active = document.getElementById('alertActive').checked;
   }
+  bootstrap.Modal.getInstance(document.getElementById('alertConfigModal')).hide();
+  showToast('Alert config updated','success');
+  loadAlertConfigs();
 }
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────

@@ -121,12 +121,25 @@ body {
   border-radius: 0;
   border-bottom: 3px solid transparent;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navbar-enterprise .nav-link i {
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.15s ease;
 }
 
 .navbar-enterprise .nav-link:hover {
   background: var(--navbar-hover);
   color: var(--navbar-text);
   border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.navbar-enterprise .nav-link:hover i {
+  transform: scale(1.1);
 }
 
 .navbar-enterprise .nav-link.active {

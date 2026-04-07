@@ -7,193 +7,201 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/css/enterprise-theme.css">
+  <style>
+    .attendance-bar { height:8px;border-radius:4px;background:#e2e8f0;overflow:hidden;margin-top:4px; }
+    .attendance-fill { height:100%;border-radius:4px; }
+    .section { display:none; }
+    .section.active { display:block; }
+  </style>
 </head>
 <body>
   <nav class="navbar-enterprise navbar navbar-expand-lg">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/parent/dashboard">College Portal</a>
+      <a class="navbar-brand" href="/parent/dashboard"><i class="bi bi-mortarboard-fill me-2"></i>Parent Portal</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link active" href="/parent/dashboard">Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+          <li class="nav-item"><a class="nav-link active" href="#" onclick="showSection('dashboard')" id="nav-dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('attendance')" id="nav-attendance"><i class="bi bi-clipboard-check me-1"></i>Attendance</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('results')" id="nav-results"><i class="bi bi-bar-chart-fill me-1"></i>Results</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('fees')" id="nav-fees"><i class="bi bi-wallet2 me-1"></i>Fees</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('profile')" id="nav-profile"><i class="bi bi-person-circle me-1"></i>Profile</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
         </ul>
       </div>
     </div>
   </nav>
 
   <div class="container-enterprise">
-    <div class="page-header-enterprise">
-      <h1>Parent Dashboard</h1>
-      <p>Welcome, <span id="parentName">Loading...</span></p>
-    </div>
-    
-    <div class="row mt-4">
-      <div class="col-md-6">
-        <div class="stat-card-enterprise">
-          <div class="stat-icon">
-            <i class="bi bi-person-badge"></i>
+
+    <!-- DASHBOARD -->
+    <div id="section-dashboard" class="section active">
+      <div class="page-header-enterprise">
+        <h1>Parent Dashboard</h1>
+        <p class="mb-0">Welcome, <span id="parentName">—</span></p>
+      </div>
+      <div class="row mt-4">
+        <div class="col-md-3 mb-3">
+          <div class="stat-card-enterprise" style="border-left-color:#22c55e">
+            <div class="stat-label">Child's Attendance</div>
+            <div class="stat-value" style="color:#22c55e">82%</div>
           </div>
-          <div class="stat-label">Profile Information</div>
-          <p class="mb-1" style="font-size: 0.95rem;"><strong>Name:</strong> <span id="fullName">Loading...</span></p>
-          <p class="mb-1" style="font-size: 0.95rem;"><strong>Email:</strong> <span id="email">Loading...</span></p>
-          <p class="mb-1" style="font-size: 0.95rem;"><strong>Phone:</strong> <span id="phone">Loading...</span></p>
-          <p class="mb-0" style="font-size: 0.95rem;"><strong>Occupation:</strong> <span id="occupation">Loading...</span></p>
+        </div>
+        <div class="col-md-3 mb-3">
+          <div class="stat-card-enterprise" style="border-left-color:#f59e0b">
+            <div class="stat-label">CGPA</div>
+            <div class="stat-value" style="color:#f59e0b">8.6</div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-3">
+          <div class="stat-card-enterprise" style="border-left-color:#ef4444">
+            <div class="stat-label">Pending Fees</div>
+            <div class="stat-value" style="color:#ef4444">₹12,409</div>
+          </div>
+        </div>
+        <div class="col-md-3 mb-3">
+          <div class="stat-card-enterprise" style="border-left-color:#2563eb">
+            <div class="stat-label">Semester</div>
+            <div class="stat-value" style="color:#2563eb">5</div>
+          </div>
         </div>
       </div>
-      <div class="col-md-6">
-        <div class="stat-card-enterprise">
-          <div class="stat-icon">
-            <i class="bi bi-people"></i>
-          </div>
-          <div class="stat-label">Quick Info</div>
-          <p class="mb-0" style="font-size: 0.95rem;"><strong>Total Children:</strong> <span id="totalChildren">0</span></p>
-        </div>
-      </div>
-    </div>
-
-    <div class="card-enterprise mt-4">
-      <div class="card-enterprise-header">
-        <i class="bi bi-people"></i> My Children
-      </div>
-      <div class="table-responsive">
-        <table class="table-enterprise">
-          <thead>
-            <tr>
-              <th>Student ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Department</th>
-              <th>Semester</th>
-              <th>Relationship</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="childrenTable">
-            <tr><td colspan="7" class="text-center">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card-enterprise mt-4" id="attendanceCard" style="display: none;">
-      <div class="card-enterprise-header">
-        <i class="bi bi-calendar-check"></i> Attendance - <span id="selectedChildName"></span>
-      </div>
-      <div class="table-responsive">
-        <table class="table-enterprise">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Course</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="attendanceTable">
-            <tr><td colspan="3" class="text-center">Select a child to view attendance</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card-enterprise mt-4" id="resultsCard" style="display: none;">
-      <div class="card-enterprise-header">
-        <i class="bi bi-trophy"></i> Exam Results - <span id="selectedChildNameResults"></span>
-      </div>
-      <div class="table-responsive">
-        <table class="table-enterprise">
-          <thead>
-            <tr>
-              <th>Exam</th>
-              <th>Course</th>
-              <th>Marks</th>
-              <th>Max Marks</th>
-              <th>Grade</th>
-            </tr>
-          </thead>
-          <tbody id="resultsTable">
-            <tr><td colspan="5" class="text-center">Select a child to view results</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card-enterprise mt-4" id="feesCard" style="display: none;">
-      <div class="card-enterprise-header">
-        <i class="bi bi-cash-coin"></i> Fee Status - <span id="selectedChildNameFees"></span>
-      </div>
-      <div class="card-body">
-        <div class="row mb-4">
-          <div class="col-md-4">
-            <div class="stat-card-enterprise">
-              <div class="stat-label">Total Fee</div>
-              <div class="stat-value" id="childTotalFee">₹0</div>
+      <div class="card-enterprise mt-2">
+        <div class="card-enterprise-header"><i class="bi bi-person-badge me-2"></i>Child Information</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Name:</strong> G. Ujwal Kumar</p>
+              <p class="mb-1"><strong>Roll No:</strong> CS2021045</p>
+              <p class="mb-1"><strong>Department:</strong> Computer Science</p>
             </div>
-          </div>
-          <div class="col-md-4">
-            <div class="stat-card-enterprise" style="border-left-color: var(--success);">
-              <div class="stat-label">Paid Amount</div>
-              <div class="stat-value" style="color: var(--success);" id="childPaidAmount">₹0</div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="stat-card-enterprise" style="border-left-color: var(--error);">
-              <div class="stat-label">Pending Dues</div>
-              <div class="stat-value" style="color: var(--error);" id="childPendingDues">₹0</div>
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Semester:</strong> 5</p>
+              <p class="mb-1"><strong>Email:</strong> ujwal@college.edu</p>
+              <p class="mb-1"><strong>Phone:</strong> 9876543210</p>
             </div>
           </div>
         </div>
-
-        <h5 class="mb-3">Fee Breakdown</h5>
-        <table class="table">
-          <tr><td>Tuition Fee</td><td class="text-end" id="childTuitionFee">₹0</td></tr>
-          <tr><td>Hostel Fee</td><td class="text-end" id="childHostelFee">₹0</td></tr>
-          <tr><td>Library Fee</td><td class="text-end" id="childLibraryFee">₹0</td></tr>
-          <tr><td>Lab Fee</td><td class="text-end" id="childLabFee">₹0</td></tr>
-          <tr><td>Other Fees</td><td class="text-end" id="childOtherFee">₹0</td></tr>
-          <tr class="fw-bold"><td>Total</td><td class="text-end" id="childTotalFeeBreakdown">₹0</td></tr>
-        </table>
+      </div>
+      <div class="row mt-4">
+        <div class="col-md-3 mb-3"><button class="btn-enterprise btn-enterprise-primary w-100" onclick="showSection('attendance')"><i class="bi bi-calendar-check me-1"></i>View Attendance</button></div>
+        <div class="col-md-3 mb-3"><button class="btn-enterprise btn-enterprise-secondary w-100" onclick="showSection('results')"><i class="bi bi-trophy me-1"></i>View Results</button></div>
+        <div class="col-md-3 mb-3"><button class="btn-enterprise btn-enterprise-primary w-100" onclick="showSection('fees')"><i class="bi bi-cash-coin me-1"></i>View Fees</button></div>
+        <div class="col-md-3 mb-3"><button class="btn-enterprise btn-enterprise-secondary w-100" onclick="showSection('profile')"><i class="bi bi-person me-1"></i>Profile</button></div>
       </div>
     </div>
 
-    <div class="card-enterprise mt-4" id="paymentHistoryCard" style="display: none;">
-      <div class="card-enterprise-header">
-        <i class="bi bi-clock-history"></i> Payment History - <span id="selectedChildNamePayments"></span>
+    <!-- ATTENDANCE -->
+    <div id="section-attendance" class="section">
+      <div class="page-header-enterprise"><h1>Attendance — G. Ujwal Kumar</h1><p class="mb-0">Semester 5 · Computer Science</p></div>
+      <div class="row mt-4 mb-3">
+        <div class="col-md-3 mb-3"><div class="stat-card-enterprise" style="border-left-color:#22c55e"><div class="stat-label">Overall</div><div class="stat-value" style="color:#22c55e">82%</div></div></div>
+        <div class="col-md-3 mb-3"><div class="stat-card-enterprise" style="border-left-color:#2563eb"><div class="stat-label">Attended</div><div class="stat-value" style="color:#2563eb">41</div></div></div>
+        <div class="col-md-3 mb-3"><div class="stat-card-enterprise" style="border-left-color:#ef4444"><div class="stat-label">Absent</div><div class="stat-value" style="color:#ef4444">9</div></div></div>
+        <div class="col-md-3 mb-3"><div class="stat-card-enterprise" style="border-left-color:#f59e0b"><div class="stat-label">Total Classes</div><div class="stat-value" style="color:#f59e0b">50</div></div></div>
       </div>
-      <div class="table-responsive">
-        <table class="table-enterprise">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Amount</th>
-              <th>Method</th>
-              <th>Receipt</th>
-            </tr>
-          </thead>
-          <tbody id="paymentHistoryTable">
-            <tr><td colspan="5" class="text-center">Select a child to view payment history</td></tr>
-          </tbody>
-        </table>
+      <div class="card-enterprise mb-4">
+        <div class="card-enterprise-header"><i class="bi bi-bar-chart me-2"></i>Subject-wise Attendance</div>
+        <div class="card-body" id="parentSubjectBars"></div>
+      </div>
+      <div class="card-enterprise">
+        <div class="card-enterprise-header"><i class="bi bi-calendar-check me-2"></i>Detailed Records</div>
+        <div class="table-responsive">
+          <table class="table-enterprise">
+            <thead><tr><th>Date</th><th>Course</th><th>Status</th></tr></thead>
+            <tbody id="parentAttendanceTable"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="card-enterprise mt-4">
-      <div class="card-enterprise-header">
-        <i class="bi bi-bell"></i> Notifications
-        <span class="badge-enterprise badge-enterprise-danger ms-2" id="notificationCount" style="display: none;">0</span>
+    <!-- RESULTS -->
+    <div id="section-results" class="section">
+      <div class="page-header-enterprise"><h1>Results — G. Ujwal Kumar</h1><p class="mb-0">Semester 5 · Computer Science</p></div>
+      <div class="row mt-4 mb-3">
+        <div class="col-md-3 mb-3"><div class="stat-card-enterprise"><div class="stat-label">CGPA</div><div class="stat-value">8.6</div></div></div>
+        <div class="col-md-3 mb-3"><div class="stat-card-enterprise" style="border-left-color:#22c55e"><div class="stat-label">Avg Score</div><div class="stat-value" style="color:#22c55e">77%</div></div></div>
+        <div class="col-md-3 mb-3"><div class="stat-card-enterprise" style="border-left-color:#6366f1"><div class="stat-label">Subjects</div><div class="stat-value" style="color:#6366f1">6</div></div></div>
+        <div class="col-md-3 mb-3"><div class="stat-card-enterprise" style="border-left-color:#f59e0b"><div class="stat-label">Exams</div><div class="stat-value" style="color:#f59e0b">6</div></div></div>
       </div>
-      <div class="card-body" id="notificationsContainer">
-        <p class="text-center text-muted">Loading notifications...</p>
+      <div class="card-enterprise">
+        <div class="card-enterprise-header"><i class="bi bi-trophy me-2"></i>Exam Results</div>
+        <div class="table-responsive">
+          <table class="table-enterprise">
+            <thead><tr><th>Date</th><th>Course</th><th>Exam</th><th>Marks</th><th>Grade</th></tr></thead>
+            <tbody id="parentResultsTable"></tbody>
+          </table>
+        </div>
       </div>
     </div>
+
+    <!-- FEES -->
+    <div id="section-fees" class="section">
+      <div class="page-header-enterprise"><h1>Fees — G. Ujwal Kumar</h1><p class="mb-0">Semester 5 · Academic Year 2025-26</p></div>
+      <div class="row mt-4 mb-4">
+        <div class="col-md-4 mb-3"><div class="stat-card-enterprise"><div class="stat-label">Total Fee</div><div class="stat-value">₹50,000</div></div></div>
+        <div class="col-md-4 mb-3"><div class="stat-card-enterprise" style="border-left-color:#22c55e"><div class="stat-label">Paid</div><div class="stat-value" style="color:#22c55e">₹37,591</div></div></div>
+        <div class="col-md-4 mb-3"><div class="stat-card-enterprise" style="border-left-color:#ef4444"><div class="stat-label">Pending</div><div class="stat-value" style="color:#ef4444">₹12,409</div></div></div>
+      </div>
+      <div class="card-enterprise mb-4">
+        <div class="card-enterprise-header"><i class="bi bi-receipt me-2"></i>Fee Breakdown</div>
+        <div class="card-body">
+          <table class="table">
+            <tr><td>Tuition Fee</td><td class="text-end">₹25,000</td></tr>
+            <tr><td>Hostel Fee</td><td class="text-end">₹18,182</td></tr>
+            <tr><td>Library Fee</td><td class="text-end">₹2,000</td></tr>
+            <tr><td>Lab Fee</td><td class="text-end">₹5,000</td></tr>
+            <tr><td>Other Fees</td><td class="text-end">₹0</td></tr>
+            <tr class="fw-bold"><td>Total</td><td class="text-end">₹50,000</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="card-enterprise">
+        <div class="card-enterprise-header"><i class="bi bi-clock-history me-2"></i>Payment History</div>
+        <div class="table-responsive">
+          <table class="table-enterprise">
+            <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+            <tbody id="parentPaymentTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="section-profile" class="section">
+      <div class="page-header-enterprise"><h1>Profile</h1></div>
+      <div class="row mt-4">
+        <div class="col-md-6 mb-4">
+          <div class="card-enterprise">
+            <div class="card-enterprise-header"><i class="bi bi-person-badge me-2"></i>Parent Details</div>
+            <div class="card-body">
+              <p class="mb-2"><strong>Name:</strong> <span id="profileName">—</span></p>
+              <p class="mb-2"><strong>Email:</strong> <span id="profileEmail">—</span></p>
+              <p class="mb-2"><strong>Phone:</strong> <span id="profilePhone">—</span></p>
+              <p class="mb-0"><strong>Occupation:</strong> <span id="profileOccupation">—</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-4">
+          <div class="card-enterprise">
+            <div class="card-enterprise-header"><i class="bi bi-mortarboard me-2"></i>Child Details</div>
+            <div class="card-body">
+              <p class="mb-2"><strong>Name:</strong> G. Ujwal Kumar</p>
+              <p class="mb-2"><strong>Roll No:</strong> CS2021045</p>
+              <p class="mb-2"><strong>Department:</strong> Computer Science</p>
+              <p class="mb-2"><strong>Semester:</strong> 5</p>
+              <p class="mb-0"><strong>Email:</strong> ujwal@college.edu</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/demo-data-store.js"></script>
-  <script src="/js/utils.js"></script>
   <script src="/js/parent.js"></script>
 </body>
 </html>

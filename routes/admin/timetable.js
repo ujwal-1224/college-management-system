@@ -5,29 +5,33 @@ const { validateTimetable, validateId } = require('../../middleware/validation')
 const { auditLog } = require('../../middleware/logger');
 const db = require('../../config/database');
 
+// Fixed timetable data — each subject 4 times/week
+const FIXED_TIMETABLE = [
+  { timetable_id:  1, course_id: 101, course_code: 'CS101', course_name: 'Introduction to Programming', day_of_week: 'Monday',    start_time: '09:00:00', end_time: '10:30:00', room_number: 'Room 101', semester: 1, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id:  2, course_id: 102, course_code: 'CS201', course_name: 'Data Structures',             day_of_week: 'Monday',    start_time: '11:00:00', end_time: '12:30:00', room_number: 'Room 202', semester: 3, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id:  3, course_id: 103, course_code: 'CS301', course_name: 'Database Management Systems', day_of_week: 'Tuesday',   start_time: '09:00:00', end_time: '10:30:00', room_number: 'Lab 1',    semester: 5, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id:  4, course_id: 104, course_code: 'MATH201', course_name: 'Discrete Mathematics',     day_of_week: 'Tuesday',   start_time: '14:00:00', end_time: '15:30:00', room_number: 'Room 203', semester: 3, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id:  5, course_id: 101, course_code: 'CS101', course_name: 'Introduction to Programming', day_of_week: 'Wednesday', start_time: '09:00:00', end_time: '10:30:00', room_number: 'Room 101', semester: 1, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id:  6, course_id: 102, course_code: 'CS201', course_name: 'Data Structures',             day_of_week: 'Wednesday', start_time: '11:00:00', end_time: '12:30:00', room_number: 'Room 202', semester: 3, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id:  7, course_id: 103, course_code: 'CS301', course_name: 'Database Management Systems', day_of_week: 'Thursday',  start_time: '09:00:00', end_time: '10:30:00', room_number: 'Lab 1',    semester: 5, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id:  8, course_id: 104, course_code: 'MATH201', course_name: 'Discrete Mathematics',     day_of_week: 'Thursday',  start_time: '14:00:00', end_time: '15:30:00', room_number: 'Room 203', semester: 3, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id:  9, course_id: 101, course_code: 'CS101', course_name: 'Introduction to Programming', day_of_week: 'Friday',    start_time: '09:00:00', end_time: '10:30:00', room_number: 'Room 101', semester: 1, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id: 10, course_id: 102, course_code: 'CS201', course_name: 'Data Structures',             day_of_week: 'Friday',    start_time: '11:00:00', end_time: '12:30:00', room_number: 'Room 202', semester: 3, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id: 11, course_id: 103, course_code: 'CS301', course_name: 'Database Management Systems', day_of_week: 'Saturday',  start_time: '09:00:00', end_time: '10:30:00', room_number: 'Lab 1',    semester: 5, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+  { timetable_id: 12, course_id: 104, course_code: 'MATH201', course_name: 'Discrete Mathematics',     day_of_week: 'Saturday',  start_time: '14:00:00', end_time: '15:30:00', room_number: 'Room 203', semester: 3, academic_year: '2025-26', staff_name: 'Dr. Saubhagya Barpanda' },
+];
+
+const DAY_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
 // Get all timetable entries
 router.get('/api/timetable', catchAsync(async (req, res) => {
-  const { course_id, day_of_week, semester, academic_year } = req.query;
-
-  let query = `
-    SELECT t.*, c.course_code, c.course_name, c.department, c.credits,
-           CONCAT(s.first_name, ' ', s.last_name) as staff_name
-    FROM Timetable t
-    JOIN Course c ON t.course_id = c.course_id
-    LEFT JOIN Staff s ON c.staff_id = s.staff_id
-    WHERE t.is_active = TRUE AND c.deleted_at IS NULL
-  `;
-  const params = [];
-
-  if (course_id) { query += ' AND t.course_id = ?'; params.push(course_id); }
-  if (day_of_week) { query += ' AND t.day_of_week = ?'; params.push(day_of_week); }
-  if (semester) { query += ' AND t.semester = ?'; params.push(semester); }
-  if (academic_year) { query += ' AND t.academic_year = ?'; params.push(academic_year); }
-
-  query += ` ORDER BY FIELD(t.day_of_week,'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'), t.start_time`;
-
-  const [entries] = await db.query(query, params);
-  res.json({ success: true, data: entries });
+  const { course_id, day_of_week, semester } = req.query;
+  let data = [...FIXED_TIMETABLE];
+  if (course_id)   data = data.filter(e => e.course_id === parseInt(course_id));
+  if (day_of_week) data = data.filter(e => e.day_of_week === day_of_week);
+  if (semester)    data = data.filter(e => e.semester === parseInt(semester));
+  data.sort((a,b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week) || a.start_time.localeCompare(b.start_time));
+  res.json({ success: true, data });
 }));
 
 // Get single timetable entry

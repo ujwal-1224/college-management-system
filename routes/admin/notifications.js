@@ -8,30 +8,30 @@ const db = require('../../config/database');
 
 // Get all notifications
 router.get('/api/notifications', validatePagination, catchAsync(async (req, res) => {
-  const { page = 1, limit = 10, target_role, notification_type, priority, search } = req.query;
+  const { page = 1, limit = 10, target_role, priority, search } = req.query;
   const { limit: queryLimit, offset } = paginate(page, limit);
 
+  const [nCols] = await db.query('SHOW COLUMNS FROM Notification');
+  const nColNames = nCols.map(c => c.Field);
+  const hasType = nColNames.includes('notification_type');
+
   let query = `
-    SELECT n.*, CONCAT(u.username) as created_by_name
+    SELECT n.*, u.username as created_by_name
     FROM Notification n
     LEFT JOIN User u ON n.created_by = u.user_id
     WHERE 1=1
   `;
   const params = [];
-
-  if (target_role) { query += ' AND n.target_role = ?'; params.push(target_role); }
-  if (notification_type) { query += ' AND n.notification_type = ?'; params.push(notification_type); }
-  if (priority) { query += ' AND n.priority = ?'; params.push(priority); }
+  if (target_role) { query += ' AND n.target_role=?'; params.push(target_role); }
+  if (priority && nColNames.includes('priority')) { query += ' AND n.priority=?'; params.push(priority); }
   if (search) { query += ' AND (n.title LIKE ? OR n.message LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
 
-  const [countResult] = await db.query(`SELECT COUNT(*) as total FROM (${query}) as sub`, params);
-  const total = countResult[0].total;
-
+  const [[{ total }]] = await db.query(`SELECT COUNT(*) as total FROM (${query}) as sub`, params);
   query += ' ORDER BY n.created_at DESC LIMIT ? OFFSET ?';
   params.push(queryLimit, offset);
 
   const [notifications] = await db.query(query, params);
-  res.json({ success: true, data: notifications, pagination: { page: parseInt(page), limit: queryLimit, total, pages: Math.ceil(total / queryLimit) } });
+  res.json({ success: true, data: notifications, pagination: { page: +page, limit: queryLimit, total, pages: Math.ceil(total / queryLimit) || 1 } });
 }));
 
 // Get single notification
@@ -42,18 +42,24 @@ router.get('/api/notifications/:id', validateId, catchAsync(async (req, res) => 
 }));
 
 // Create notification
-router.post('/api/notifications', validateNotification, catchAsync(async (req, res) => {
+router.post('/api/notifications', catchAsync(async (req, res) => {
   const { title, message, notification_type, target_role, target_user_id, priority, expires_at } = req.body;
+  if (!title || !message) throw new AppError('title and message required', 400);
+
+  const [nCols] = await db.query('SHOW COLUMNS FROM Notification');
+  const nColNames = nCols.map(c => c.Field);
+
+  const fields = ['title','message','target_role','created_by'];
+  const values = [title, message, target_role || 'all', req.session.userId];
+
+  if (nColNames.includes('notification_type')) { fields.push('notification_type'); values.push(notification_type || 'general'); }
+  if (nColNames.includes('priority'))          { fields.push('priority');          values.push(priority || 'medium'); }
+  if (nColNames.includes('target_user_id'))    { fields.push('target_user_id');    values.push(target_user_id || null); }
+  if (nColNames.includes('expires_at'))        { fields.push('expires_at');        values.push(expires_at || null); }
 
   const [result] = await db.query(
-    `INSERT INTO Notification (title, message, notification_type, target_role, target_user_id, priority, created_by, expires_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [title, message, notification_type || 'general', target_role, target_user_id || null, priority || 'medium', req.session.userId, expires_at || null]
+    `INSERT INTO Notification (${fields.join(',')}) VALUES (${fields.map(()=>'?').join(',')})`, values
   );
-
-  await auditLog('CREATE', 'Notification', result.insertId, req.session.userId, null,
-    { title, target_role, priority }, req);
-
   res.status(201).json({ success: true, message: 'Notification created', data: { notification_id: result.insertId } });
 }));
 

@@ -6,104 +6,240 @@
   <title>Student Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="/css/ui.css">
-  <link rel="stylesheet" href="/css/animations.css">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/enterprise-theme.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .notif-badge { position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border-radius:50%; font-size:0.65rem; width:18px; height:18px; display:flex; align-items:center; justify-content:center; }
+    .notif-item { padding:10px 14px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
+    .notif-item:hover { background:#f8fafc; }
+    .notif-item.unread { border-left:3px solid #2563eb; background:#eff6ff; }
+    .notif-item.read { border-left:3px solid transparent; }
+    .attendance-bar { height:8px; border-radius:4px; background:#e2e8f0; overflow:hidden; }
+    .attendance-fill { height:100%; border-radius:4px; transition:width 0.6s; }
+    .tab-content-section { display:none; }
+    .tab-content-section.active { display:block; }
+    .nav-tabs .nav-link { color:#6b7280; }
+    .nav-tabs .nav-link.active { color:#2563eb; font-weight:600; }
+  </style>
 </head>
 <body>
-  <nav class="navbar-modern navbar navbar-expand-lg navbar-light">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">🎓 College Management</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link active" href="/student/dashboard">Dashboard</a></li>
-          <li class="nav-item"><span class="nav-link">👤 Student</span></li>
-          <li class="nav-item"><a class="nav-link btn-modern-danger" href="/logout" style="color: white; padding: 0.5rem 1rem; border-radius: 8px;">Logout</a></li>
-        </ul>
-      </div>
+<nav class="navbar-enterprise navbar navbar-expand-lg">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/student/dashboard"><i class="bi bi-mortarboard-fill me-2"></i>Student Portal</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="showSection('dashboard')"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('courses')"><i class="bi bi-book-fill me-1"></i>Courses</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('timetable')"><i class="bi bi-calendar-week me-1"></i>Timetable</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('fees')"><i class="bi bi-wallet2 me-1"></i>Fees</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('profile')"><i class="bi bi-person-circle me-1"></i>Profile</a></li>
+        <li class="nav-item position-relative me-2">
+          <a class="nav-link" href="#" onclick="toggleNotifications(event)"><i class="bi bi-bell fs-5"></i><span class="notif-badge" id="notifBadge">3</span></a>
+          <div id="notifDropdown" class="card shadow" style="display:none;position:absolute;right:0;top:40px;width:320px;z-index:1000;max-height:380px;overflow-y:auto;">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+              <strong style="font-size:0.9rem">Notifications</strong>
+              <a href="#" onclick="markAllRead(event)" style="font-size:0.78rem;color:#2563eb">Mark all read</a>
+            </div>
+            <div id="notifList"></div>
+          </div>
+        </li>
+        <li class="nav-item"><a class="nav-link" href="/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+      </ul>
     </div>
-  </nav>
+  </div>
+</nav>
 
-  <div class="container mt-4">
-    <h2 style="font-family: var(--font-primary); color: #1f2937;">Student Dashboard 📚</h2>
-    
-    <div class="row mt-4">
-      <div class="col-md-4">
-        <div class="stat-card">
-          <div class="stat-card-icon" style="background: var(--gradient-info);">
-            <i class="bi bi-person-circle"></i>
-          </div>
-          <h5 class="stat-card-label">My Profile</h5>
-          <p class="stat-card-value" style="font-size: 1.2rem;" id="studentName">Loading...</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="stat-card">
-          <div class="stat-card-icon" style="background: var(--gradient-success);">
-            <i class="bi bi-building"></i>
-          </div>
-          <h5 class="stat-card-label">Department</h5>
-          <p class="stat-card-value" style="font-size: 1.2rem;" id="department">Loading...</p>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="stat-card">
-          <div class="stat-card-icon" style="background: var(--gradient-warning);">
-            <i class="bi bi-calendar3"></i>
-          </div>
-          <h5 class="stat-card-label">Semester</h5>
-          <p class="stat-card-value" style="font-size: 1.2rem;" id="semester">Loading...</p>
-        </div>
-      </div>
+<div class="container-enterprise">
+
+  <!-- DASHBOARD SECTION -->
+  <div id="section-dashboard" class="tab-content-section active">
+    <div class="page-header-enterprise">
+      <h1>Student Dashboard</h1>
+      <p class="mb-0">Welcome back, <span id="studentName">—</span></p>
     </div>
 
-    <div class="modern-card mt-4">
-      <div class="modern-card-header">
-        <i class="bi bi-calendar-check"></i> 📅 Recent Attendance
+    <!-- Stats Row -->
+    <div class="row mt-4 mb-3">
+      <div class="col-6 col-md-3 mb-3">
+        <div class="stat-card-enterprise">
+          <div class="stat-icon"><i class="bi bi-building"></i></div>
+          <div class="stat-label">Department</div>
+          <div class="stat-value" id="statDept" style="font-size:1rem">—</div>
+        </div>
       </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="stat-card-enterprise" style="border-left-color:#6366f1">
+          <div class="stat-icon"><i class="bi bi-layers" style="color:#6366f1"></i></div>
+          <div class="stat-label">Semester</div>
+          <div class="stat-value" id="statSem" style="color:#6366f1">—</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="stat-card-enterprise" style="border-left-color:#22c55e">
+          <div class="stat-icon"><i class="bi bi-percent" style="color:#22c55e"></i></div>
+          <div class="stat-label">Attendance</div>
+          <div class="stat-value" id="statAttendance" style="color:#22c55e">82%</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 mb-3">
+        <div class="stat-card-enterprise" style="border-left-color:#f59e0b">
+          <div class="stat-icon"><i class="bi bi-star-fill" style="color:#f59e0b"></i></div>
+          <div class="stat-label">CGPA</div>
+          <div class="stat-value" id="statCgpa" style="color:#f59e0b">8.4</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Attendance Summary -->
+      <div class="col-md-6 mb-4">
+        <div class="card-enterprise h-100">
+          <div class="card-enterprise-header"><i class="bi bi-bar-chart me-2"></i>Attendance Summary</div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="fw-semibold">Overall Attendance</span>
+              <span class="fw-bold" style="color:#22c55e;font-size:1.3rem">82%</span>
+            </div>
+            <div id="subjectAttendance"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CGPA Chart -->
+      <div class="col-md-6 mb-4">
+        <div class="card-enterprise h-100">
+          <div class="card-enterprise-header"><i class="bi bi-graph-up me-2"></i>CGPA Trend</div>
+          <div class="card-body d-flex align-items-center justify-content-center">
+            <canvas id="cgpaChart" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Attendance -->
+    <div class="card-enterprise mb-4">
+      <div class="card-enterprise-header"><i class="bi bi-calendar-check me-2"></i>Recent Attendance</div>
       <div class="table-responsive">
-        <table class="modern-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Course</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="attendanceTable">
-            <tr><td colspan="3" class="text-center">Loading...</td></tr>
-          </tbody>
+        <table class="table-enterprise">
+          <thead><tr><th>Date</th><th>Course</th><th>Status</th></tr></thead>
+          <tbody id="attendanceTable"><tr><td colspan="3" class="text-center py-3">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
 
-    <div class="modern-card mt-4">
-      <div class="modern-card-header">
-        <i class="bi bi-trophy"></i> 🏆 My Results
-      </div>
+    <!-- Results -->
+    <div class="card-enterprise mb-4">
+      <div class="card-enterprise-header"><i class="bi bi-trophy me-2"></i>My Results</div>
       <div class="table-responsive">
-        <table class="modern-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Course</th>
-              <th>Exam</th>
-              <th>Marks</th>
-              <th>Grade</th>
-            </tr>
-          </thead>
-          <tbody id="resultsTable">
-            <tr><td colspan="5" class="text-center">Loading...</td></tr>
-          </tbody>
+        <table class="table-enterprise">
+          <thead><tr><th>Date</th><th>Course</th><th>Exam</th><th>Marks</th><th>Grade</th></tr></thead>
+          <tbody id="resultsTable"><tr><td colspan="5" class="text-center py-3">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/student.js"></script>
+  <!-- COURSES SECTION -->
+  <div id="section-courses" class="tab-content-section">
+    <div class="page-header-enterprise"><h1>My Courses</h1><p class="mb-0">Enrolled subjects this semester</p></div>
+    <div class="row mt-4" id="coursesGrid"></div>
+  </div>
+
+  <!-- TIMETABLE SECTION -->
+  <div id="section-timetable" class="tab-content-section">
+    <div class="page-header-enterprise"><h1>Weekly Timetable</h1><p class="mb-0">Your class schedule</p></div>
+    <div class="card-enterprise mt-4">
+      <div class="table-responsive">
+        <table class="table-enterprise">
+          <thead>
+            <tr><th>Day</th><th>Time</th><th>Subject</th><th>Faculty</th><th>Room</th></tr>
+          </thead>
+          <tbody id="timetableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEES SECTION -->
+  <div id="section-fees" class="tab-content-section">
+    <div class="page-header-enterprise"><h1>Fee Details</h1><p class="mb-0">Your fee summary and payment history</p></div>
+    <div class="row mt-4 mb-4">
+      <div class="col-md-4 mb-3">
+        <div class="stat-card-enterprise">
+          <div class="stat-label">Total Fees</div>
+          <div class="stat-value">₹50,000</div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="stat-card-enterprise" style="border-left-color:#22c55e">
+          <div class="stat-label">Paid</div>
+          <div class="stat-value" style="color:#22c55e">₹42,591</div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="stat-card-enterprise" style="border-left-color:#ef4444">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" style="color:#ef4444">₹7,409</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-enterprise">
+      <div class="card-enterprise-header"><i class="bi bi-receipt me-2"></i>Payment History</div>
+      <div class="table-responsive">
+        <table class="table-enterprise">
+          <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody id="feesTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE SECTION -->
+  <div id="section-profile" class="tab-content-section">
+    <div class="page-header-enterprise"><h1>My Profile</h1><p class="mb-0">View and edit your information</p></div>
+    <div class="card-enterprise mt-4" style="max-width:600px">
+      <div class="card-enterprise-header"><i class="bi bi-person-circle me-2"></i>Personal Information</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">First Name</label>
+            <input type="text" class="form-control" id="profileFirstName">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="profileLastName">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="profileEmail">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-control" id="profilePhone">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Department</label>
+            <input type="text" class="form-control" id="profileDept" readonly style="background:#f8fafc">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Semester</label>
+            <input type="text" class="form-control" id="profileSem" readonly style="background:#f8fafc">
+          </div>
+          <div class="col-12 mt-2">
+            <button class="btn-enterprise btn-enterprise-primary" onclick="saveProfile()"><i class="bi bi-check-circle me-1"></i>Save Changes</button>
+            <span id="profileSaveMsg" class="ms-3 text-success" style="display:none;font-size:0.85rem">✓ Saved successfully</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/student.js"></script>
 </body>
 </html>

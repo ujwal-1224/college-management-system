@@ -48,6 +48,19 @@
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
+    .demo-cred {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #6b7280;
+    }
+    .demo-cred span {
+      cursor: pointer;
+      color: #2563EB;
+    }
+    .demo-cred span:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -87,16 +100,23 @@
           </button>
         </form>
         
-        <div class="mt-4 text-center">
-          <small class="text-muted">Demo Credentials:</small><br>
-          <small class="text-muted">Admin: admin/admin123 | Student: ujwal/student123</small><br>
-          <small class="text-muted">Staff: soubhagya/staff123 | Parent: shashi/parent123</small>
+        <div class="demo-cred">
+          Demo Credentials:<br>
+          <span onclick="fillLogin('admin','admin123')">Admin (admin/admin123)</span> |
+          <span onclick="fillLogin('ujwal','student123')">Student (ujwal/student123)</span> |
+          <span onclick="fillLogin('soubhagya','staff123')">Staff (soubhagya/staff123)</span> |
+          <span onclick="fillLogin('shashi','parent123')">Parent (shashi/parent123)</span>
         </div>
       </div>
     </div>
   </div>
 
   <script>
+    function fillLogin(username, password) {
+      document.querySelector('input[name="username"]').value = username;
+      document.querySelector('input[name="password"]').value = password;
+    }
+
     // Get role from URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const role = urlParams.get('role');
@@ -126,7 +146,7 @@
         const response = await fetch('/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ username, password, role })
         });
         
         const data = await response.json();

@@ -8,109 +8,77 @@ const db = require('../../config/database');
 
 // Get all courses with pagination, search, and filters
 router.get('/api/courses', validatePagination, catchAsync(async (req, res) => {
-  const { page = 1, limit = 10, search, department, semester, staff_id, sortBy = 'course_id', sortOrder = 'DESC' } = req.query;
+  const { page = 1, limit = 10, search, department, semester, staff_id } = req.query;
   const { limit: queryLimit, offset } = paginate(page, limit);
 
+  // Detect optional columns
+  const [cCols] = await db.query('SHOW COLUMNS FROM Course');
+  const courseColNames = cCols.map(c => c.Field);
+  const hasDeleted  = courseColNames.includes('deleted_at');
+  const hasIsActive = courseColNames.includes('is_active');
+
+  const [sCols] = await db.query('SHOW COLUMNS FROM Staff');
+  const staffColNames = sCols.map(c => c.Field);
+  const hasEmpId = staffColNames.includes('employee_id');
+
   let query = `
-    SELECT c.*, 
-           CONCAT(s.first_name, ' ', s.last_name) as staff_name,
-           s.employee_id,
+    SELECT c.course_id, c.course_code, c.course_name, c.department, c.credits, c.semester,
+           c.staff_id,
+           ${hasIsActive ? 'c.is_active,' : '1 as is_active,'}
+           CONCAT(s.first_name,' ',s.last_name) as staff_name,
+           ${hasEmpId ? 's.employee_id,' : "'—' as employee_id,"}
            COUNT(DISTINCT ce.student_id) as enrolled_students
     FROM Course c
     LEFT JOIN Staff s ON c.staff_id = s.staff_id
     LEFT JOIN CourseEnrollment ce ON c.course_id = ce.course_id AND ce.status = 'active'
-    WHERE c.deleted_at IS NULL
+    WHERE 1=1 ${hasDeleted ? 'AND c.deleted_at IS NULL' : ''}
   `;
-  
   const params = [];
 
-  // Search
   if (search) {
-    query += ` AND (${buildSearchQuery(search, ['c.course_code', 'c.course_name'])})`;
-    params.push(...buildSearchParams(search, 2));
+    query += ` AND (c.course_code LIKE ? OR c.course_name LIKE ?)`;
+    params.push(`%${search}%`, `%${search}%`);
   }
+  if (department) { query += ' AND c.department=?'; params.push(department); }
+  if (semester)   { query += ' AND c.semester=?';   params.push(semester); }
+  if (staff_id)   { query += ' AND c.staff_id=?';   params.push(staff_id); }
 
-  // Filters
-  if (department) {
-    query += ` AND c.department = ?`;
-    params.push(department);
-  }
+  query += ' GROUP BY c.course_id';
 
-  if (semester) {
-    query += ` AND c.semester = ?`;
-    params.push(semester);
-  }
-
-  if (staff_id) {
-    query += ` AND c.staff_id = ?`;
-    params.push(staff_id);
-  }
-
-  query += ` GROUP BY c.course_id`;
-
-  // Count total
-  const countQuery = `SELECT COUNT(*) as total FROM (${query}) as subquery`;
-  const [countResult] = await db.query(countQuery, params);
-  const total = countResult[0].total;
-
-  // Add sorting and pagination
-  query += ` ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`;
+  const [[{ total }]] = await db.query(`SELECT COUNT(*) as total FROM (${query}) as sub`, params);
+  query += ' ORDER BY c.course_id DESC LIMIT ? OFFSET ?';
   params.push(queryLimit, offset);
 
   const [courses] = await db.query(query, params);
-
-  res.json({
-    success: true,
-    data: courses,
-    pagination: {
-      page: parseInt(page),
-      limit: queryLimit,
-      total,
-      pages: Math.ceil(total / queryLimit)
-    }
-  });
+  res.json({ success: true, data: courses, pagination: { page: +page, limit: queryLimit, total, pages: Math.ceil(total / queryLimit) || 1 } });
 }));
 
 // Get single course
 router.get('/api/courses/:id', validateId, catchAsync(async (req, res) => {
+  const [cCols] = await db.query('SHOW COLUMNS FROM Course');
+  const hasDeleted = cCols.map(c => c.Field).includes('deleted_at');
+
   const [courses] = await db.query(`
-    SELECT c.*, 
-           CONCAT(s.first_name, ' ', s.last_name) as staff_name,
-           s.employee_id, s.email as staff_email, s.phone as staff_phone
-    FROM Course c
-    LEFT JOIN Staff s ON c.staff_id = s.staff_id
-    WHERE c.course_id = ? AND c.deleted_at IS NULL
+    SELECT c.*, CONCAT(s.first_name,' ',s.last_name) as staff_name
+    FROM Course c LEFT JOIN Staff s ON c.staff_id = s.staff_id
+    WHERE c.course_id = ? ${hasDeleted ? 'AND c.deleted_at IS NULL' : ''}
   `, [req.params.id]);
 
-  if (courses.length === 0) {
-    throw new AppError('Course not found', 404);
-  }
+  if (!courses.length) throw new AppError('Course not found', 404);
 
-  // Get enrolled students
-  const [students] = await db.query(`
-    SELECT st.student_id, st.roll_number, st.first_name, st.last_name, 
-           st.email, st.department, st.semester, ce.enrollment_date, ce.status
-    FROM CourseEnrollment ce
-    JOIN Student st ON ce.student_id = st.student_id
-    WHERE ce.course_id = ?
-    ORDER BY st.roll_number
-  `, [req.params.id]);
+  // Enrolled students
+  let students = [];
+  try {
+    const [rows] = await db.query(`
+      SELECT st.student_id, st.first_name, st.last_name, st.email, st.department, st.semester,
+             ce.enrollment_date, ce.status
+      FROM CourseEnrollment ce JOIN Student st ON ce.student_id = st.student_id
+      WHERE ce.course_id = ? ORDER BY st.first_name
+    `, [req.params.id]);
+    students = rows;
+  } catch(e) {}
 
-  // Get timetable
-  const [timetable] = await db.query(`
-    SELECT * FROM Timetable
-    WHERE course_id = ? AND is_active = TRUE
-    ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'), start_time
-  `, [req.params.id]);
-
-  res.json({
-    success: true,
-    data: {
-      ...courses[0],
-      enrolled_students: students,
-      timetable
-    }
-  });
+  res.json({ success: true, data: { ...courses[0], enrolled_students: students, timetable: [] } });
 }));
 
 // Create new course
@@ -405,55 +373,33 @@ router.delete('/api/courses/:id/students/:studentId', validateId, catchAsync(asy
 
 // Get course statistics
 router.get('/api/courses/stats/overview', catchAsync(async (req, res) => {
-  const [stats] = await db.query(`
-    SELECT 
-      COUNT(*) as total_courses,
-      COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active_courses,
-      COUNT(CASE WHEN is_active = FALSE THEN 1 END) as inactive_courses,
-      COUNT(DISTINCT department) as total_departments,
-      SUM(credits) as total_credits
-    FROM Course
-    WHERE deleted_at IS NULL
+  const [cCols] = await db.query('SHOW COLUMNS FROM Course');
+  const courseColNames = cCols.map(c => c.Field);
+  const hasDeleted  = courseColNames.includes('deleted_at');
+  const hasIsActive = courseColNames.includes('is_active');
+
+  const [[stats]] = await db.query(`
+    SELECT COUNT(*) as total_courses,
+           ${hasIsActive ? 'COUNT(CASE WHEN is_active=1 THEN 1 END) as active_courses,' : 'COUNT(*) as active_courses,'}
+           COUNT(DISTINCT department) as total_departments
+    FROM Course ${hasDeleted ? 'WHERE deleted_at IS NULL' : ''}
   `);
 
-  const [byDepartment] = await db.query(`
-    SELECT department, COUNT(*) as count
-    FROM Course
-    WHERE deleted_at IS NULL
-    GROUP BY department
-    ORDER BY count DESC
-  `);
+  let total_enrollments = 0;
+  try {
+    const [[e]] = await db.query("SELECT COUNT(*) as cnt FROM CourseEnrollment WHERE status='active'");
+    total_enrollments = e.cnt;
+  } catch(e) {}
 
-  const [bySemester] = await db.query(`
-    SELECT semester, COUNT(*) as count
-    FROM Course
-    WHERE deleted_at IS NULL
-    GROUP BY semester
-    ORDER BY semester
-  `);
-
-  const [enrollmentStats] = await db.query(`
-    SELECT 
-      COUNT(DISTINCT ce.student_id) as total_enrolled_students,
-      COUNT(ce.enrollment_id) as total_enrollments,
-      AVG(enrollments_per_course) as avg_enrollments_per_course
-    FROM CourseEnrollment ce
-    JOIN (
-      SELECT course_id, COUNT(*) as enrollments_per_course
-      FROM CourseEnrollment
-      WHERE status = 'active'
-      GROUP BY course_id
-    ) as sub ON ce.course_id = sub.course_id
-    WHERE ce.status = 'active'
-  `);
+  const [byDepartment] = await db.query(`SELECT department, COUNT(*) as count FROM Course ${hasDeleted ? 'WHERE deleted_at IS NULL' : ''} GROUP BY department ORDER BY count DESC`);
+  const [bySemester]   = await db.query(`SELECT semester, COUNT(*) as count FROM Course ${hasDeleted ? 'WHERE deleted_at IS NULL' : ''} GROUP BY semester ORDER BY semester`);
 
   res.json({
     success: true,
     data: {
-      overview: stats[0],
+      overview: { ...stats, total_enrollments },
       by_department: byDepartment,
-      by_semester: bySemester,
-      enrollment_stats: enrollmentStats[0]
+      by_semester: bySemester
     }
   });
 }));

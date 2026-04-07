@@ -1,307 +1,144 @@
-// Load profile on page load
+// ── Shared dummy data (mirrors student module) ───────────────
+const P_ATTENDANCE = [
+  { attendance_date: '2026-04-04', course_name: 'Data Structures & Algorithms', course_code: 'CS301', status: 'present' },
+  { attendance_date: '2026-04-03', course_name: 'Operating Systems',            course_code: 'CS302', status: 'absent'  },
+  { attendance_date: '2026-04-03', course_name: 'Data Structures & Algorithms', course_code: 'CS301', status: 'present' },
+  { attendance_date: '2026-04-02', course_name: 'Database Management Systems',  course_code: 'CS303', status: 'present' },
+  { attendance_date: '2026-04-02', course_name: 'Computer Networks',            course_code: 'CS304', status: 'late'    },
+  { attendance_date: '2026-04-01', course_name: 'Software Engineering',         course_code: 'CS305', status: 'present' },
+  { attendance_date: '2026-03-31', course_name: 'Database Management Systems',  course_code: 'CS303', status: 'present' },
+  { attendance_date: '2026-03-31', course_name: 'Operating Systems',            course_code: 'CS302', status: 'present' },
+  { attendance_date: '2026-03-28', course_name: 'Data Structures & Algorithms', course_code: 'CS301', status: 'absent'  },
+  { attendance_date: '2026-03-28', course_name: 'Computer Networks',            course_code: 'CS304', status: 'present' },
+];
+
+const P_SUBJECT_ATTENDANCE = [
+  { subject: 'Data Structures & Algorithms', code: 'CS301', pct: 90 },
+  { subject: 'Operating Systems',            code: 'CS302', pct: 72 },
+  { subject: 'Database Management Systems',  code: 'CS303', pct: 88 },
+  { subject: 'Computer Networks',            code: 'CS304', pct: 78 },
+  { subject: 'Software Engineering',         code: 'CS305', pct: 85 },
+  { subject: 'Web Technologies',             code: 'CS306', pct: 80 },
+];
+
+const P_RESULTS = [
+  { exam_date: '2026-04-20', course_code: 'CS301', course_name: 'Data Structures & Algorithms', exam_name: 'Final Exam',   marks_obtained: 92, max_marks: 100, grade: 'A+' },
+  { exam_date: '2026-04-15', course_code: 'CS302', course_name: 'Operating Systems',            exam_name: 'Final Exam',   marks_obtained: 78, max_marks: 100, grade: 'B+' },
+  { exam_date: '2026-03-20', course_code: 'CS303', course_name: 'Database Management Systems',  exam_name: 'Mid-Term',     marks_obtained: 42, max_marks: 50,  grade: 'A'  },
+  { exam_date: '2026-03-18', course_code: 'CS304', course_name: 'Computer Networks',            exam_name: 'Mid-Term',     marks_obtained: 38, max_marks: 50,  grade: 'B+' },
+  { exam_date: '2026-03-15', course_code: 'CS305', course_name: 'Software Engineering',         exam_name: 'Quiz 2',       marks_obtained: 18, max_marks: 20,  grade: 'A+' },
+  { exam_date: '2026-02-28', course_code: 'CS306', course_name: 'Web Technologies',             exam_name: 'Assignment 1', marks_obtained: 28, max_marks: 30,  grade: 'A'  },
+];
+
+const P_PAYMENTS = [
+  { payment_date: '2026-01-05', description: 'Tuition Fee - Sem 5', amount: 25000, payment_method: 'Online', status: 'paid' },
+  { payment_date: '2026-01-05', description: 'Library Fee',          amount:  2000, payment_method: 'Online', status: 'paid' },
+  { payment_date: '2026-01-05', description: 'Lab Fee',              amount:  5000, payment_method: 'UPI',    status: 'paid' },
+  { payment_date: '2026-02-01', description: 'Sports Fee',           amount:  1500, payment_method: 'Cash',   status: 'paid' },
+  { payment_date: '2026-03-01', description: 'Hostel Fee - Mar',     amount:  4091, payment_method: 'Online', status: 'paid' },
+  { payment_date: '2026-04-01', description: 'Hostel Fee - Apr',     amount: 12409, payment_method: 'Online', status: 'pending' },
+];
+
+// ── Helpers ──────────────────────────────────────────────────
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+function statusBadge(s) {
+  const map = { present:['success','✓ Present'], late:['warning','⏰ Late'], absent:['danger','✗ Absent'] };
+  const [c,l] = map[s] || ['secondary', s];
+  return `<span class="badge bg-${c}">${l}</span>`;
+}
+
+function gradeBadge(g) {
+  if (!g) return 'secondary';
+  if (g.startsWith('A')) return 'success';
+  if (g.startsWith('B')) return 'primary';
+  if (g.startsWith('C')) return 'info';
+  return 'warning';
+}
+
+// ── Section navigation ───────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.querySelectorAll('.navbar-nav .nav-link').forEach(l => l.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  const nc = document.querySelector('.navbar-collapse');
+  if (nc && nc.classList.contains('show')) nc.classList.remove('show');
+  return false;
+}
+
+// ── Profile ──────────────────────────────────────────────────
 async function loadProfile() {
+  let data = { first_name: 'Shashi', last_name: 'Kumar', email: 'shashi@parent.edu', phone: '9876500001', occupation: 'Engineer' };
   try {
-    const response = await fetch('/parent/api/profile');
-    const data = await response.json();
-    
-    document.getElementById('parentName').textContent = 
-      `${data.first_name || 'N/A'} ${data.last_name || ''}`;
-    document.getElementById('fullName').textContent = 
-      `${data.first_name || 'N/A'} ${data.last_name || ''}`;
-    document.getElementById('email').textContent = data.email || 'N/A';
-    document.getElementById('phone').textContent = data.phone || 'N/A';
-    document.getElementById('occupation').textContent = data.occupation || 'N/A';
-  } catch (error) {
-    console.error('Error loading profile:', error);
-  }
+    const r = await fetch('/parent/api/profile');
+    if (r.ok) { const d = await r.json(); if (d.first_name) data = d; }
+  } catch (_) {}
+  const name = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+  document.getElementById('parentName').textContent = name;
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('profileEmail').textContent = data.email || 'N/A';
+  document.getElementById('profilePhone').textContent = data.phone || 'N/A';
+  document.getElementById('profileOccupation').textContent = data.occupation || 'N/A';
 }
 
-async function loadChildren() {
-  try {
-    const response = await fetch('/parent/api/children');
-    const data = await response.json();
-    
-    const tbody = document.getElementById('childrenTable');
-    document.getElementById('totalChildren').textContent = data.length;
-    
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center">No children found</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = data.map(child => `
-      <tr>
-        <td>${child.student_id}</td>
-        <td>${child.first_name} ${child.last_name}</td>
-        <td>${child.email}</td>
-        <td>${child.department || 'N/A'}</td>
-        <td>${child.semester || 'N/A'}</td>
-        <td>${child.relationship}</td>
-        <td>
-          <button class="btn-enterprise btn-enterprise-primary" style="font-size: 0.875rem; padding: 0.375rem 0.75rem;" onclick="viewChildDetails(${child.student_id}, '${child.first_name} ${child.last_name}')">
-            <i class="bi bi-eye"></i> View All
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (error) {
-    console.error('Error loading children:', error);
-  }
-}
-
-async function viewChildDetails(studentId, studentName) {
-  // Load all child information
-  await viewAttendance(studentId, studentName);
-  await viewResults(studentId, studentName);
-  await viewFees(studentId, studentName);
-  await viewPaymentHistory(studentId, studentName);
-  
-  // Show all cards
-  document.getElementById('attendanceCard').style.display = 'block';
-  document.getElementById('resultsCard').style.display = 'block';
-  document.getElementById('feesCard').style.display = 'block';
-  document.getElementById('paymentHistoryCard').style.display = 'block';
-  
-  // Scroll to attendance card
-  document.getElementById('attendanceCard').scrollIntoView({ behavior: 'smooth' });
-}
-
-async function viewAttendance(studentId, name) {
-  try {
-    const response = await fetch(`/parent/api/child-attendance/${studentId}`);
-    const data = await response.json();
-    
-    document.getElementById('selectedChildName').textContent = name;
-    
-    const tbody = document.getElementById('attendanceTable');
-    
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" class="text-center">No attendance records found</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = data.map(record => `
-      <tr>
-        <td>${new Date(record.attendance_date).toLocaleDateString()}</td>
-        <td>${record.course_name} (${record.course_code})</td>
-        <td><span class="badge-modern badge-${record.status === 'present' ? 'success' : 'danger'}">${record.status === 'present' ? '✓ Present' : '✗ Absent'}</span></td>
-      </tr>
-    `).join('');
-  } catch (error) {
-    console.error('Error loading attendance:', error);
-  }
-}
-
-async function viewResults(studentId, name) {
-  try {
-    const response = await fetch(`/parent/api/child-results/${studentId}`);
-    const data = await response.json();
-    
-    document.getElementById('selectedChildNameResults').textContent = name;
-    
-    const tbody = document.getElementById('resultsTable');
-    
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center">No exam results found</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = data.map(result => `
-      <tr>
-        <td>${result.exam_name}</td>
-        <td>${result.course_name}</td>
-        <td>${result.marks_obtained}</td>
-        <td>${result.max_marks}</td>
-        <td><span class="badge-modern badge-${getGradeBadge(result.grade)}">${result.grade || 'N/A'}</span></td>
-      </tr>
-    `).join('');
-  } catch (error) {
-    console.error('Error loading results:', error);
-  }
-}
-
-async function viewFees(studentId, name) {
-  try {
-    const response = await fetch(`/parent/api/child-fees/${studentId}`);
-    const fees = await response.json();
-    
-    document.getElementById('selectedChildNameFees').textContent = name;
-    
-    if (!fees || !fees.totalFee) {
-      document.getElementById('childTotalFee').textContent = '₹0';
-      document.getElementById('childPaidAmount').textContent = '₹0';
-      document.getElementById('childPendingDues').textContent = '₹0';
-      document.getElementById('childTuitionFee').textContent = '₹0';
-      document.getElementById('childHostelFee').textContent = '₹0';
-      document.getElementById('childLibraryFee').textContent = '₹0';
-      document.getElementById('childLabFee').textContent = '₹0';
-      document.getElementById('childOtherFee').textContent = '₹0';
-      document.getElementById('childTotalFeeBreakdown').textContent = '₹0';
-      return;
-    }
-    
-    document.getElementById('childTotalFee').textContent = `₹${fees.totalFee.toLocaleString()}`;
-    document.getElementById('childPaidAmount').textContent = `₹${fees.paidAmount.toLocaleString()}`;
-    document.getElementById('childPendingDues').textContent = `₹${fees.pendingDues.toLocaleString()}`;
-    
-    // Fee breakdown
-    document.getElementById('childTuitionFee').textContent = `₹${fees.tuitionFee.toLocaleString()}`;
-    document.getElementById('childHostelFee').textContent = `₹${fees.hostelFee.toLocaleString()}`;
-    document.getElementById('childLibraryFee').textContent = `₹${fees.libraryFee.toLocaleString()}`;
-    document.getElementById('childLabFee').textContent = `₹${fees.labFee.toLocaleString()}`;
-    document.getElementById('childOtherFee').textContent = `₹${fees.otherFee.toLocaleString()}`;
-    document.getElementById('childTotalFeeBreakdown').textContent = `₹${fees.totalFee.toLocaleString()}`;
-  } catch (error) {
-    console.error('Error loading fees:', error);
-  }
-}
-
-async function viewPaymentHistory(studentId, name) {
-  try {
-    const response = await fetch(`/parent/api/child-payment-history/${studentId}`);
-    const payments = await response.json();
-    
-    document.getElementById('selectedChildNamePayments').textContent = name;
-    
-    const tbody = document.getElementById('paymentHistoryTable');
-    
-    if (payments.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center">No payment history found</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = payments.map(payment => `
-      <tr>
-        <td>${new Date(payment.payment_date).toLocaleDateString()}</td>
-        <td>${payment.description || 'Fee Payment'}</td>
-        <td>₹${payment.amount.toLocaleString()}</td>
-        <td>${payment.payment_method}</td>
-        <td>
-          <button class="btn-enterprise btn-enterprise-primary" style="font-size: 0.875rem; padding: 0.375rem 0.75rem;" onclick="viewReceipt('${payment.receipt_number}', '${payment.transaction_id}', ${payment.amount}, '${payment.payment_date}', '${payment.description || 'Fee Payment'}', '${name}')">
-            <i class="bi bi-receipt"></i> View
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (error) {
-    console.error('Error loading payment history:', error);
-  }
-}
-
-async function loadNotifications() {
-  try {
-    const response = await fetch('/parent/api/notifications');
-    const notifications = await response.json();
-    
-    const unreadCount = notifications.filter(n => !n.is_read).length;
-    const badge = document.getElementById('notificationCount');
-    
-    if (unreadCount > 0) {
-      badge.textContent = unreadCount;
-      badge.style.display = 'inline-block';
-    } else {
-      badge.style.display = 'none';
-    }
-    
-    const container = document.getElementById('notificationsContainer');
-    
-    if (notifications.length === 0) {
-      container.innerHTML = '<p class="text-center text-muted">No notifications</p>';
-      return;
-    }
-    
-    container.innerHTML = notifications.map(notif => `
-      <div class="alert ${notif.is_read ? 'alert-secondary' : 'alert-primary'} d-flex justify-content-between align-items-start mb-2">
-        <div style="flex: 1;">
-          <h6 class="alert-heading mb-1">${notif.title}</h6>
-          <p class="mb-1" style="font-size: 0.9rem;">${notif.message}</p>
-          <small class="text-muted">${new Date(notif.created_at).toLocaleString()}</small>
-        </div>
-        ${!notif.is_read ? `<button class="btn btn-sm btn-primary ms-2" onclick="markNotificationAsRead(${notif.notification_id})">Mark Read</button>` : ''}
+// ── Attendance ───────────────────────────────────────────────
+function renderAttendance() {
+  // Subject bars
+  const bars = document.getElementById('parentSubjectBars');
+  bars.innerHTML = P_SUBJECT_ATTENDANCE.map(s => {
+    const color = s.pct >= 85 ? '#22c55e' : s.pct >= 75 ? '#f59e0b' : '#ef4444';
+    return `<div class="mb-3">
+      <div class="d-flex justify-content-between mb-1">
+        <span style="font-size:0.85rem">${s.subject} <small class="text-muted">${s.code}</small></span>
+        <span style="font-size:0.85rem;font-weight:600;color:${color}">${s.pct}%</span>
       </div>
-    `).join('');
-  } catch (error) {
-    console.error('Error loading notifications:', error);
-    document.getElementById('notificationsContainer').innerHTML = '<p class="text-center text-muted">Error loading notifications</p>';
-  }
+      <div class="attendance-bar"><div class="attendance-fill" style="width:${s.pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Table
+  const tbody = document.getElementById('parentAttendanceTable');
+  tbody.innerHTML = P_ATTENDANCE.map(r => `
+    <tr>
+      <td>${fmtDate(r.attendance_date)}</td>
+      <td>${r.course_code} – ${r.course_name}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`).join('');
 }
 
-async function markNotificationAsRead(notificationId) {
-  try {
-    await fetch(`/parent/api/notifications/${notificationId}/read`, {
-      method: 'PUT'
-    });
-    loadNotifications();
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-  }
+// ── Results ──────────────────────────────────────────────────
+function renderResults() {
+  const tbody = document.getElementById('parentResultsTable');
+  tbody.innerHTML = P_RESULTS.map(r => `
+    <tr>
+      <td>${fmtDate(r.exam_date)}</td>
+      <td>${r.course_code} – ${r.course_name}</td>
+      <td>${r.exam_name}</td>
+      <td>${r.marks_obtained}/${r.max_marks}</td>
+      <td><span class="badge bg-${gradeBadge(r.grade)}">${r.grade}</span></td>
+    </tr>`).join('');
 }
 
-function viewReceipt(receiptNumber, transactionId, amount, date, description, studentName) {
-  const content = `
-    <div class="text-center mb-3">
-      <h4>Payment Receipt</h4>
-      <p class="text-muted">College Management System</p>
-    </div>
-    <hr>
-    <p><strong>Receipt Number:</strong> ${receiptNumber}</p>
-    <p><strong>Transaction ID:</strong> ${transactionId}</p>
-    <p><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
-    <p><strong>Student Name:</strong> ${studentName}</p>
-    <p><strong>Description:</strong> ${description}</p>
-    <p><strong>Amount Paid:</strong> ₹${amount.toLocaleString()}</p>
-    <hr>
-    <p class="text-center text-muted">This is a computer-generated receipt</p>
-  `;
-  
-  // Create modal
-  const modal = document.createElement('div');
-  modal.className = 'modal fade';
-  modal.innerHTML = `
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Payment Receipt</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div style="border: 2px dashed #667eea; padding: 2rem; border-radius: 12px; background: #f9fafb;">
-            ${content}
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn-enterprise btn-enterprise-primary" onclick="printReceipt()">
-            <i class="bi bi-printer"></i> Print
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  const bsModal = new bootstrap.Modal(modal);
-  bsModal.show();
-  
-  modal.addEventListener('hidden.bs.modal', () => {
-    modal.remove();
-  });
+// ── Fees ─────────────────────────────────────────────────────
+function renderPayments() {
+  const tbody = document.getElementById('parentPaymentTable');
+  tbody.innerHTML = P_PAYMENTS.map(p => `
+    <tr>
+      <td>${fmtDate(p.payment_date)}</td>
+      <td>${p.description}</td>
+      <td>₹${p.amount.toLocaleString('en-IN')}</td>
+      <td>${p.payment_method}</td>
+      <td><span class="badge bg-${p.status === 'paid' ? 'success' : 'danger'}">${p.status === 'paid' ? '✓ Paid' : '⏳ Pending'}</span></td>
+    </tr>`).join('');
 }
 
-function printReceipt() {
-  window.print();
-}
-
-function getGradeBadge(grade) {
-  if (!grade) return 'secondary';
-  if (grade.includes('A')) return 'success';
-  if (grade.includes('B')) return 'primary';
-  if (grade.includes('C')) return 'info';
-  if (grade.includes('D')) return 'warning';
-  return 'danger';
-}
-
-// Initialize on page load
+// ── Init ─────────────────────────────────────────────────────
 loadProfile();
-loadChildren();
-loadNotifications();
+renderAttendance();
+renderResults();
+renderPayments();

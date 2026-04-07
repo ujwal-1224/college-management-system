@@ -11,16 +11,29 @@
 <body>
   <nav class="navbar-enterprise navbar navbar-expand-lg">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/admin/dashboard">College Portal</a>
+      <a class="navbar-brand" href="/admin/dashboard"><i class="bi bi-mortarboard-fill me-2"></i>Admin Portal</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link" href="/admin/attendance-reports">Attendance</a></li>
-          <li class="nav-item"><a class="nav-link active" href="/admin/results-reports">Results</a></li>
-          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/students"><i class="bi bi-people me-1"></i>Students</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/staff"><i class="bi bi-person-badge me-1"></i>Staff</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/courses"><i class="bi bi-book me-1"></i>Courses</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/timetable"><i class="bi bi-calendar-week me-1"></i>Timetable</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/exams"><i class="bi bi-journal-check me-1"></i>Exams</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/fees"><i class="bi bi-cash-coin me-1"></i>Fees</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/notifications"><i class="bi bi-bell me-1"></i>Notifications</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle active" href="#" data-bs-toggle="dropdown"><i class="bi bi-bar-chart me-1"></i>Reports</a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/admin/attendance-reports"><i class="bi bi-bar-chart me-2"></i>Attendance Reports</a></li>
+              <li><a class="dropdown-item active" href="/admin/results-reports"><i class="bi bi-trophy me-2"></i>Results Reports</a></li>
+            </ul>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="/admin/settings"><i class="bi bi-gear me-1"></i>Settings</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
         </ul>
       </div>
     </div>
@@ -44,6 +57,10 @@
                 <label for="courseFilter" class="form-label">Course</label>
                 <select class="form-select" id="courseFilter">
                   <option value="">All Courses</option>
+                  <option value="101">CS101 – Introduction to Programming</option>
+                  <option value="102">CS201 – Data Structures</option>
+                  <option value="103">CS301 – Database Management Systems</option>
+                  <option value="104">MATH201 – Discrete Mathematics</option>
                 </select>
               </div>
               
@@ -51,6 +68,8 @@
                 <label for="examFilter" class="form-label">Exam</label>
                 <select class="form-select" id="examFilter">
                   <option value="">All Exams</option>
+                  <option value="midterm">Mid-Term Exam</option>
+                  <option value="final">Final Exam</option>
                 </select>
               </div>
               
@@ -100,7 +119,7 @@
           <thead>
             <tr>
               <th>Roll No</th>
-              <th>Student</th>
+              <th>Student Name</th>
               <th>Course</th>
               <th>Exam</th>
               <th>Marks</th>
@@ -108,7 +127,7 @@
             </tr>
           </thead>
           <tbody id="resultsTable">
-            <tr><td colspan="6" class="text-center">Select filters and click Generate Report</td></tr>
+            <tr><td colspan="6" class="text-center py-3 text-muted">Loading...</td></tr>
           </tbody>
         </table>
       </div>

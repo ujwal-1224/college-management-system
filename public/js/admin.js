@@ -3,9 +3,12 @@ async function loadStats() {
     const response = await fetch('/admin/api/stats');
     const data = await response.json();
     
-    document.getElementById('totalStudents').textContent = data.students || 0;
-    document.getElementById('totalFaculty').textContent = data.faculty || 0;
-    document.getElementById('totalCourses').textContent = data.courses || 0;
+    const el = id => document.getElementById(id);
+    if (el('totalStudents')) el('totalStudents').textContent = data.students || 0;
+    if (el('totalFaculty'))  el('totalFaculty').textContent  = data.staff || data.faculty || 0;
+    if (el('totalStaff'))    el('totalStaff').textContent    = data.staff || 0;
+    if (el('totalCourses'))  el('totalCourses').textContent  = data.courses || 0;
+    if (el('totalParents'))  el('totalParents').textContent  = data.parents || 0;
   } catch (error) {
     console.error('Error loading stats:', error);
   }
